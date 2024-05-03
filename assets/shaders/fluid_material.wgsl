@@ -13,8 +13,3 @@ fn fragment(
     
     return vec4<f32>(v, 0.0, 1.0);
 }
-
-// fn runge_kutta(tex_coords: vec2<f32>) -> vec2<f32> {
-//     var x_mid = tex_coords + 0.5 * dt * textureSample(velocity_texture, velocity_sampler, tex_coords).rg;
-//     return tex_coords + dt * textureSample(velocity_texture, velocity_sampler, x_mid).rg;
-// }

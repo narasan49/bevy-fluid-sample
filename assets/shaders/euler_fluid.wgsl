@@ -1,4 +1,6 @@
 @group(0) @binding(0) var velocity_texture: texture_storage_2d<rg32float, read_write>;
+@group(0) @binding(1) var velocity_cache_texture: texture_storage_2d<rg32float, read_write>;
+@group(0) @binding(2) var<uniform> dt: f32;
 
 @compute @workgroup_size(8, 8, 1)
 fn init(
@@ -26,7 +28,6 @@ fn gausian_2d(x: f32, y: f32, sigma: f32) -> f32 {
 }
 
 fn runge_kutta(location: vec2<i32>) -> vec2<f32> {
-    let dt = 1.0;
     let x_mid = vec2<f32>(location) + vec2<f32>(0.5 * dt) * vec2<f32>(textureLoad(velocity_texture, location).rg);
 
     return vec2<f32>(location) + dt * interpolate_texture(x_mid);

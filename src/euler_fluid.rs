@@ -3,17 +3,20 @@ use std::borrow::Cow;
 use bevy::{
     prelude::*,
     render::{
+        extract_component::{ComponentUniforms, ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin},
         extract_resource::{ExtractResource, ExtractResourcePlugin},
         graph::CameraDriverLabel,
         render_asset::{RenderAssetUsages, RenderAssets},
         render_graph::{self, RenderGraph, RenderLabel},
-        render_resource::*,
+        render_resource::{binding_types::{texture_storage_2d, uniform_buffer}, *},
         renderer::RenderDevice,
         Render,
         RenderApp,
         RenderSet
     },
 };
+
+use crate::texture::ImageForCS;
 
 const SIZE: (u32, u32) = (512, 512);
 const WORKGROUP_SIZE: u32 = 8;
@@ -23,8 +26,11 @@ pub struct FluidPlugin;
 impl Plugin for FluidPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ExtractResourcePlugin::<VelocityTexture>::default())
+            .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
+            .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())
-            .add_systems(Startup, setup);
+            .add_systems(Startup, setup)
+            .add_systems(Update, update);
 
         let render_app = app.sub_app_mut(RenderApp);
         render_app.add_systems(Render, prepare_bind_group.in_set(RenderSet::PrepareBindGroups));
@@ -46,12 +52,16 @@ fn prepare_bind_group(
     gpu_images: Res<RenderAssets<Image>>,
     velocity_texture: Res<VelocityTexture>,
     render_device: Res<RenderDevice>,
+    uniform: Res<ComponentUniforms<SimulationUniform>>,
 ) {
     let view = gpu_images.get(&velocity_texture.texture).unwrap();
+    let cache_texture = gpu_images.get(&velocity_texture.velocity_cache).unwrap();
+    let uniform = uniform.uniforms().binding().unwrap();
+
     let bind_group = render_device.create_bind_group(
         None,
         &pipeline.texture_bind_group_layout,
-        &BindGroupEntries::single(&view.texture_view)
+        &BindGroupEntries::sequential((&view.texture_view, &cache_texture.texture_view, uniform))
     );
 
     commands.insert_resource(VelocityBindGroup(bind_group));
@@ -77,6 +87,8 @@ fn setup(
 
     image.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
     let image = images.add(image);
+    let velocity_cache_image = Image::new_image(SIZE);
+    let velocity_cache_image = images.add(velocity_cache_image);
 
     let mesh = meshes.add(
         Mesh::from(Plane3d::default())
@@ -96,16 +108,33 @@ fn setup(
         }
     });
 
-    commands.insert_resource(VelocityTexture { texture: image });
+    commands.insert_resource(VelocityTexture { texture: image, velocity_cache: velocity_cache_image});
+    commands.spawn(SimulationUniform { dt: 0.0f32 });
+}
+
+fn update(
+    mut query: Query<&mut SimulationUniform>,
+    time: Res<Time>,
+) {
+    for mut uniform in &mut query {
+        uniform.dt = time.delta_seconds();
+    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
 struct FluidLabel;
 
-#[derive(Resource, Clone, Deref, ExtractResource, AsBindGroup)]
+#[derive(Resource, Clone, ExtractResource, AsBindGroup)]
 struct VelocityTexture {
     #[storage_texture(0, image_format = Rg32Float, access = ReadWrite)]
     texture: Handle<Image>,
+    #[storage_texture(1, image_format = Rg32Float, access = ReadWrite)]
+    velocity_cache: Handle<Image>
+}
+
+#[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
+struct SimulationUniform {
+    dt: f32,
 }
 
 #[derive(Resource)]
@@ -121,7 +150,17 @@ struct FluidPipeline {
 impl FromWorld for FluidPipeline {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.resource::<RenderDevice>();
-        let texture_bind_group_layout = VelocityTexture::bind_group_layout(render_device);
+        let texture_bind_group_layout = render_device.create_bind_group_layout(
+            None,
+            &BindGroupLayoutEntries::sequential(
+                ShaderStages::COMPUTE,
+                (
+                    texture_storage_2d(TextureFormat::Rg32Float, StorageTextureAccess::ReadWrite),
+                    texture_storage_2d(TextureFormat::Rg32Float, StorageTextureAccess::ReadWrite),
+                    uniform_buffer::<SimulationUniform>(false),
+                ),
+            ),
+        );
         let shader = world.resource::<AssetServer>().load("shaders/euler_fluid.wgsl");
 
         let pipeline_cache = world.resource::<PipelineCache>();

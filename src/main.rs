@@ -1,4 +1,5 @@
 mod euler_fluid;
+mod texture;
 use bevy::prelude::*;
 use euler_fluid::FluidPlugin;
 
