@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 bevy = "0.13.2"
 bytemuck = "1.15.0"
+iyes_perf_ui = "0.2.3"
+
