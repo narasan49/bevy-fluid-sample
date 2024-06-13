@@ -310,8 +310,34 @@ impl render_graph::Node for FluidNode {
                 }
             }
             FluidState::Init => {
-                if let CachedPipelineState::Ok(_) = pipeline_cache.get_compute_pipeline_state(pipeline.update_pipeline) {
-                    self.state = FluidState::Update
+                let update_pipeline_cache = pipeline_cache.get_compute_pipeline_state(pipeline.update_pipeline);
+                let solve_pressure_pipeline_cache = pipeline_cache.get_compute_pipeline_state(pipeline.solve_pressure_pipeline);
+                let update_pressure_pipeline_cache = pipeline_cache.get_compute_pipeline_state(pipeline.update_pressure_pipeline);
+                let update_velocity_init_pipeline_cache = pipeline_cache.get_compute_pipeline_state(pipeline.update_velocity_init_pipeline);
+                let update_velocity_add_pipeline_cache = pipeline_cache.get_compute_pipeline_state(pipeline.update_velocity_add_pipeline);
+                let update_velocity_sub_pipeline_cache = pipeline_cache.get_compute_pipeline_state(pipeline.update_velocity_sub_pipeline);
+                let update_velocity_sub_v_pipeline_cache = pipeline_cache.get_compute_pipeline_state(pipeline.update_velocity_sub_v_pipeline);
+                match (
+                    update_pipeline_cache,
+                    solve_pressure_pipeline_cache,
+                    update_pressure_pipeline_cache,
+                    update_velocity_init_pipeline_cache,
+                    update_velocity_add_pipeline_cache,
+                    update_velocity_sub_pipeline_cache,
+                    update_velocity_sub_v_pipeline_cache,
+                ) {
+                    (
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
+                    ) => {
+                        self.state = FluidState::Update
+                    }
+                    _ => {}
                 }
             }
             FluidState::Update => {}
@@ -345,15 +371,12 @@ impl render_graph::Node for FluidNode {
 
                 let pressure_pipeline = pipeline_cache.get_compute_pipeline(pipeline.solve_pressure_pipeline).unwrap();
                 let update_pressure_pipeline = pipeline_cache.get_compute_pipeline(pipeline.update_pressure_pipeline).unwrap();
-                for _ in 0..50 {
+                for _ in 0..30 {
                     pass.set_pipeline(pressure_pipeline);
                     pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
                     pass.set_pipeline(update_pressure_pipeline);
                     pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
                 }
-
-                // pass.set_pipeline(update_pressure_pipeline);
-                // pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
 
                 let update_velocity_pipeline = pipeline_cache.get_compute_pipeline(pipeline.update_velocity_init_pipeline).unwrap();
                 pass.set_pipeline(update_velocity_pipeline);
