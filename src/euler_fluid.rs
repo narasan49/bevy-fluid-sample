@@ -1,4 +1,6 @@
-use std::borrow::Cow;
+pub mod advection;
+pub mod fluid_material;
+use std::{borrow::Cow, vec};
 
 use bevy::{
     prelude::*,
@@ -6,7 +8,7 @@ use bevy::{
         extract_component::{ComponentUniforms, ExtractComponent, ExtractComponentPlugin, UniformComponentPlugin},
         extract_resource::{ExtractResource, ExtractResourcePlugin},
         graph::CameraDriverLabel,
-        render_asset::{RenderAssetUsages, RenderAssets},
+        render_asset::RenderAssets,
         render_graph::{self, RenderGraph, RenderLabel},
         render_resource::{binding_types::{texture_storage_2d, uniform_buffer}, *},
         renderer::RenderDevice,
@@ -18,7 +20,10 @@ use bevy::{
 
 use crate::texture::ImageForCS;
 
+use self::fluid_material::FluidMaterial;
+
 const SIZE: (u32, u32) = (512, 512);
+const SIZE_VELOCITY: (u32, u32) = (SIZE.0 + 1, SIZE.1 + 1);
 const WORKGROUP_SIZE: u32 = 8;
 
 pub struct FluidPlugin;
@@ -56,12 +61,21 @@ fn prepare_bind_group(
 ) {
     let view = gpu_images.get(&velocity_texture.texture).unwrap();
     let cache_texture = gpu_images.get(&velocity_texture.velocity_cache).unwrap();
+    let pressure = gpu_images.get(&velocity_texture.pressure).unwrap();
+    let intermediate_pressure = gpu_images.get(&velocity_texture.intermediate_pressure).unwrap();
+    let boundary_condition = gpu_images.get(&velocity_texture.boundary_condition).unwrap();
     let uniform = uniform.uniforms().binding().unwrap();
 
     let bind_group = render_device.create_bind_group(
         None,
         &pipeline.texture_bind_group_layout,
-        &BindGroupEntries::sequential((&view.texture_view, &cache_texture.texture_view, uniform))
+        &BindGroupEntries::sequential((
+            &view.texture_view,
+            &cache_texture.texture_view,
+            &pressure.texture_view,
+            &intermediate_pressure.texture_view,
+            &boundary_condition.texture_view,
+            uniform))
     );
 
     commands.insert_resource(VelocityBindGroup(bind_group));
@@ -73,22 +87,20 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<FluidMaterial>>,
 ) {
-    let mut image = Image::new_fill(
-        Extent3d {
-            width: SIZE.0,
-            height: SIZE.1,
-            depth_or_array_layers: 1,
-        }, 
-        TextureDimension::D2,
-        bytemuck::bytes_of(&[0.0f32;2]),
-        TextureFormat::Rg32Float,
-        RenderAssetUsages::RENDER_WORLD
-    );
+    let velocity_image = Image::new_texture_storage(SIZE_VELOCITY, TextureFormat::Rg32Float);
+    let velocity_image = images.add(velocity_image);
 
-    image.texture_descriptor.usage = TextureUsages::COPY_DST | TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING;
-    let image = images.add(image);
-    let velocity_cache_image = Image::new_image(SIZE);
+    let velocity_cache_image = Image::new_texture_storage(SIZE_VELOCITY, TextureFormat::Rg32Float);
     let velocity_cache_image = images.add(velocity_cache_image);
+
+    let pressure = Image::new_texture_storage(SIZE, TextureFormat::R32Float);
+    let pressure = images.add(pressure);
+
+    let intermediate_pressure = Image::new_texture_storage(SIZE, TextureFormat::R32Float);
+    let intermediate_pressure = images.add(intermediate_pressure);
+
+    let boundary_condition = Image::new_texture_storage(SIZE, TextureFormat::R32Float);
+    let boundary_condition = images.add(boundary_condition);
 
     let mesh = meshes.add(
         Mesh::from(Plane3d::default())
@@ -96,7 +108,7 @@ fn setup(
     
     let material = materials.add(FluidMaterial {
         base_color: Color::RED,
-        velocity_texture: Some(image.clone()),
+        velocity_texture: Some(velocity_image.clone()),
     });
 
     commands.spawn(SimulationBundle {
@@ -108,16 +120,16 @@ fn setup(
         }
     });
 
-    commands.insert_resource(VelocityTexture { texture: image, velocity_cache: velocity_cache_image});
-    commands.spawn(SimulationUniform { dt: 0.0f32 });
+    commands.insert_resource(VelocityTexture { texture: velocity_image, velocity_cache: velocity_cache_image, pressure, intermediate_pressure, boundary_condition});
+    commands.spawn(SimulationUniform { dx: 1.0f32, dt: 0.1f32, rho: 1.293f32 });
 }
 
 fn update(
     mut query: Query<&mut SimulationUniform>,
-    time: Res<Time>,
+    _time: Res<Time>,
 ) {
     for mut uniform in &mut query {
-        uniform.dt = time.delta_seconds();
+        uniform.dt = 0.1;
     }
 }
 
@@ -129,12 +141,20 @@ struct VelocityTexture {
     #[storage_texture(0, image_format = Rg32Float, access = ReadWrite)]
     texture: Handle<Image>,
     #[storage_texture(1, image_format = Rg32Float, access = ReadWrite)]
-    velocity_cache: Handle<Image>
+    velocity_cache: Handle<Image>,
+    #[storage_texture(2, image_format = R32Float, access = ReadWrite)]
+    pressure: Handle<Image>,
+    #[storage_texture(3, image_format = R32Float, access = ReadWrite)]
+    intermediate_pressure: Handle<Image>,
+    #[storage_texture(4, image_format = R32Float, access = ReadWrite)]
+    boundary_condition: Handle<Image>,
 }
 
 #[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
 struct SimulationUniform {
+    dx: f32,
     dt: f32,
+    rho: f32,
 }
 
 #[derive(Resource)]
@@ -145,6 +165,12 @@ struct FluidPipeline {
     texture_bind_group_layout: BindGroupLayout,
     init_pipeline: CachedComputePipelineId,
     update_pipeline: CachedComputePipelineId,
+    solve_pressure_pipeline: CachedComputePipelineId,
+    update_pressure_pipeline: CachedComputePipelineId,
+    update_velocity_init_pipeline: CachedComputePipelineId,
+    update_velocity_add_pipeline: CachedComputePipelineId,
+    update_velocity_sub_pipeline: CachedComputePipelineId,
+    update_velocity_sub_v_pipeline: CachedComputePipelineId,
 }
 
 impl FromWorld for FluidPipeline {
@@ -157,6 +183,9 @@ impl FromWorld for FluidPipeline {
                 (
                     texture_storage_2d(TextureFormat::Rg32Float, StorageTextureAccess::ReadWrite),
                     texture_storage_2d(TextureFormat::Rg32Float, StorageTextureAccess::ReadWrite),
+                    texture_storage_2d(TextureFormat::R32Float, StorageTextureAccess::ReadWrite),
+                    texture_storage_2d(TextureFormat::R32Float, StorageTextureAccess::ReadWrite),
+                    texture_storage_2d(TextureFormat::R32Float, StorageTextureAccess::ReadWrite),
                     uniform_buffer::<SimulationUniform>(false),
                 ),
             ),
@@ -177,15 +206,75 @@ impl FromWorld for FluidPipeline {
             label: None,
             layout: vec![texture_bind_group_layout.clone()],
             push_constant_ranges: Vec::new(),
-            shader,
+            shader: shader.clone(),
             shader_defs: vec![],
             entry_point: Cow::from("update"),
+        });
+
+        let solve_pressure_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+            label: None,
+            layout: vec![texture_bind_group_layout.clone()],
+            push_constant_ranges: Vec::new(),
+            shader: shader.clone(),
+            shader_defs: vec![],
+            entry_point: Cow::from("solve_pressure"),
+        });
+
+        let update_pressure_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+            label: None,
+            layout: vec![texture_bind_group_layout.clone()],
+            push_constant_ranges: Vec::new(),
+            shader: shader.clone(),
+            shader_defs: vec![],
+            entry_point: Cow::from("update_pressure"),
+        });
+
+        let update_velocity_init_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+            label: None,
+            layout: vec![texture_bind_group_layout.clone()],
+            push_constant_ranges: Vec::new(),
+            shader: shader.clone(),
+            shader_defs: vec![],
+            entry_point: Cow::from("solve_velocity_init"),
+        });
+
+        let update_velocity_sub_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+            label: None,
+            layout: vec![texture_bind_group_layout.clone()],
+            push_constant_ranges: Vec::new(),
+            shader: shader.clone(),
+            shader_defs: vec![],
+            entry_point: Cow::from("solve_velocity_sub"),
+        });
+
+        let update_velocity_sub_v_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+            label: None,
+            layout: vec![texture_bind_group_layout.clone()],
+            push_constant_ranges: Vec::new(),
+            shader: shader.clone(),
+            shader_defs: vec![],
+            entry_point: Cow::from("solve_velocity_sub_v"),
+        });
+
+        let update_velocity_add_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+            label: None,
+            layout: vec![texture_bind_group_layout.clone()],
+            push_constant_ranges: Vec::new(),
+            shader: shader.clone(),
+            shader_defs: vec![],
+            entry_point: Cow::from("solve_velocity_add"),
         });
 
         FluidPipeline {
             texture_bind_group_layout,
             init_pipeline,
             update_pipeline,
+            solve_pressure_pipeline,
+            update_pressure_pipeline,
+            update_velocity_init_pipeline,
+            update_velocity_add_pipeline,
+            update_velocity_sub_pipeline,
+            update_velocity_sub_v_pipeline,
         }
     }
 }
@@ -253,25 +342,38 @@ impl render_graph::Node for FluidNode {
                 let update_pipeline = pipeline_cache.get_compute_pipeline(pipeline.update_pipeline).unwrap();
                 pass.set_pipeline(update_pipeline);
                 pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+
+                let pressure_pipeline = pipeline_cache.get_compute_pipeline(pipeline.solve_pressure_pipeline).unwrap();
+                let update_pressure_pipeline = pipeline_cache.get_compute_pipeline(pipeline.update_pressure_pipeline).unwrap();
+                for _ in 0..50 {
+                    pass.set_pipeline(pressure_pipeline);
+                    pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+                    pass.set_pipeline(update_pressure_pipeline);
+                    pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+                }
+
+                // pass.set_pipeline(update_pressure_pipeline);
+                // pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+
+                let update_velocity_pipeline = pipeline_cache.get_compute_pipeline(pipeline.update_velocity_init_pipeline).unwrap();
+                pass.set_pipeline(update_velocity_pipeline);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+
+                let update_velocity_sub_pipeline = pipeline_cache.get_compute_pipeline(pipeline.update_velocity_sub_pipeline).unwrap();
+                pass.set_pipeline(update_velocity_sub_pipeline);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+
+                let update_velocity_sub_v_pipeline = pipeline_cache.get_compute_pipeline(pipeline.update_velocity_sub_v_pipeline).unwrap();
+                pass.set_pipeline(update_velocity_sub_v_pipeline);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+
+                let update_velocity_add_pipeline = pipeline_cache.get_compute_pipeline(pipeline.update_velocity_add_pipeline).unwrap();
+                pass.set_pipeline(update_velocity_add_pipeline);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
             }
         }
 
         Ok(())
-    }
-}
-
-#[derive(Asset, Clone, AsBindGroup, TypePath, Debug)]
-pub struct FluidMaterial {
-    #[uniform(0)]
-    pub base_color: Color,
-    #[texture(1)]
-    #[sampler(2)]
-    pub velocity_texture: Option<Handle<Image>>,
-}
-
-impl Material for FluidMaterial {
-    fn fragment_shader() -> ShaderRef {
-        "shaders/fluid_material.wgsl".into()
     }
 }
 
