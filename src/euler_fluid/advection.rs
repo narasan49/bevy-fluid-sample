@@ -24,8 +24,9 @@ use crate::texture::ImageForCS;
 use super::fluid_material::FluidMaterial;
 
 const SIZE: (u32, u32) = (512, 512);
-const SIZE_VELOCITY: (u32, u32) = (SIZE.0 + 1, SIZE.1 + 1);
-const WORKGROUP_SIZE: u32 = 8;
+const SIZE_U: (u32, u32) = (SIZE.0 + 1, SIZE.1);
+const SIZE_V: (u32, u32) = (SIZE.0, SIZE.1 + 1);
+const WORKGROUP_SIZE: u32 = 64;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
 struct AdvectionLabel;
@@ -83,10 +84,14 @@ fn prepare_bind_group(
 
 #[derive(Resource, Clone, ExtractResource, AsBindGroup)]
 pub struct AdvectionRenderResource {
-    #[storage_texture(0, image_format = Rg32Float, access = ReadWrite)]
-    pub input_velocity: Handle<Image>,
-    #[storage_texture(1, image_format = Rg32Float, access = ReadWrite)]
-    output_velocity: Handle<Image>,
+    #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
+    pub u_in: Handle<Image>,
+    #[storage_texture(1, image_format = R32Float, access = ReadWrite)]
+    u_out: Handle<Image>,
+    #[storage_texture(2, image_format = R32Float, access = ReadWrite)]
+    v_in: Handle<Image>,
+    #[storage_texture(3, image_format = R32Float, access = ReadWrite)]
+    v_out: Handle<Image>,
 }
 
 #[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
@@ -176,13 +181,19 @@ fn setup(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
 ) {
-    let input_velocity = Image::new_texture_storage(SIZE_VELOCITY, TextureFormat::Rg32Float);
-    let input_velocity = images.add(input_velocity);
+    let u_in = Image::new_texture_storage(SIZE_U, TextureFormat::R32Float);
+    let u_in = images.add(u_in);
 
-    let output_velocity = Image::new_texture_storage(SIZE_VELOCITY, TextureFormat::Rg32Float);
-    let output_velocity = images.add(output_velocity);
+    let u_out = Image::new_texture_storage(SIZE_U, TextureFormat::R32Float);
+    let u_out = images.add(u_out);
+    
+    let v_in = Image::new_texture_storage(SIZE_V, TextureFormat::R32Float);
+    let v_in = images.add(v_in);
 
-    commands.insert_resource(AdvectionRenderResource { input_velocity, output_velocity});
+    let v_out = Image::new_texture_storage(SIZE_V, TextureFormat::R32Float);
+    let v_out = images.add(v_out);
+
+    commands.insert_resource(AdvectionRenderResource { u_in, u_out, v_in, v_out});
     commands.spawn(AdvectionUniform{ dt: 0.1f32 });
 }
 
@@ -252,16 +263,16 @@ impl render_graph::Node for AdvectionNode {
             AdvectionState::Init => {
                 let init_pipeline = pipeline_cache.get_compute_pipeline(pipeline.init_pipeline).unwrap();
                 pass.set_pipeline(init_pipeline);
-                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1, 1);
             }
             AdvectionState::Update => {
                 let update_pipeline = pipeline_cache.get_compute_pipeline(pipeline.pipeline).unwrap();
                 pass.set_pipeline(update_pipeline);
-                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1, 1);
 
                 let swap_pipeline = pipeline_cache.get_compute_pipeline(pipeline.swap_pipeline).unwrap();
                 pass.set_pipeline(swap_pipeline);
-                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1, 1);
                 
             }
         }

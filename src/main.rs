@@ -82,7 +82,7 @@ fn on_advection_initialized(
             );
             let material = materials.add(FluidMaterial {
                 base_color: Color::RED,
-                velocity_texture: Some(advection.input_velocity.clone())
+                velocity_texture: Some(advection.u_in.clone())
             });
             commands.spawn((
                 Name::new("advection"),
