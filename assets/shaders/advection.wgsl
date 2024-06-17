@@ -1,7 +1,3 @@
-struct SimulationUniform {
-    dt: f32,
-}
-
 @group(0) @binding(0) var u_in: texture_storage_2d<r32float, read_write>;
 @group(0) @binding(1) var u_out: texture_storage_2d<r32float, read_write>;
 @group(0) @binding(2) var v_in: texture_storage_2d<r32float, read_write>;
@@ -9,14 +5,20 @@ struct SimulationUniform {
 
 @group(1) @binding(0) var<uniform> constants: SimulationUniform;
 
+struct SimulationUniform {
+    dx: f32,
+    dt: f32,
+    rho: f32,
+}
+
 // ToDo: Move to a separate file
-@compute @workgroup_size(64, 1, 1)
+@compute @workgroup_size(1, 64, 1)
 fn initialize(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {
     let x_u = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
     let x_v = vec2<i32>(x_u.y, x_u.x);
-    let speed = 1.0 * gausian_2d(256.0 - f32(invocation_id.x), 256.0 - f32(invocation_id.y), 100.0);
+    let speed = 10.0 * gausian_2d(256.0 - f32(invocation_id.x), 256.0 - f32(invocation_id.y), 100.0);
 
     textureStore(u_in, x_u, vec4<f32>(speed, 0.0, 0.0, 0.0));
     textureStore(u_out, x_u, vec4<f32>(speed, 0.0, 0.0, 0.0));
@@ -24,7 +26,7 @@ fn initialize(
     textureStore(v_out, x_v, vec4<f32>(speed, 0.0, 0.0, 0.0));
 }
 
-@compute @workgroup_size(64, 1, 1)
+@compute @workgroup_size(1, 64, 1)
 fn advection(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {
@@ -41,7 +43,7 @@ fn advection(
 }
 
 // ToDo: Move to a separate file
-@compute @workgroup_size(64, 1, 1)
+@compute @workgroup_size(1, 64, 1)
 fn swap(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {

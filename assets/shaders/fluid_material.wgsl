@@ -11,5 +11,5 @@ fn fragment(
     // var backtraced_location = runge_kutta(mesh.uv);
     var v = textureSample(velocity_texture, velocity_sampler, mesh.uv).rg;
     
-    return vec4<f32>(v.r, v.g, 0.0, 1.0);
+    return vec4<f32>(v.r, 0.0, 0.0, 1.0);
 }

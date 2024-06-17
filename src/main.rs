@@ -1,7 +1,10 @@
 mod euler_fluid;
 mod texture;
+mod advection_plugin;
+
 use bevy::{prelude::*, render::{ settings::{Backends, WgpuSettings}, RenderPlugin}};
-use euler_fluid::{advection::{AdvectionPlugin, AdvectionRenderResource}, fluid_material::FluidMaterial, FluidPlugin};
+use advection_plugin::AdvectionPlugin;
+use euler_fluid::{advection::AdvectionMaterial, fluid_material::FluidMaterial, FluidPlugin};
 use iyes_perf_ui::{PerfUiCompleteBundle, PerfUiPlugin};
 
 const WIDTH: f32 = 1280.0;
@@ -30,7 +33,7 @@ fn main() {
         .add_plugins(bevy::diagnostic::SystemInformationDiagnosticsPlugin)
         .add_plugins(PerfUiPlugin)
         .add_plugins(FluidPlugin)
-        .add_plugins(AdvectionPlugin)
+        // .add_plugins(AdvectionPlugin)
         .add_systems(Startup, setup_scene)
         .add_systems(Update, on_advection_initialized)
         .run();
@@ -69,7 +72,7 @@ fn setup_scene(
 
 fn on_advection_initialized(
     mut commands: Commands,
-    advection: Option<Res<AdvectionRenderResource>>,
+    advection: Option<Res<AdvectionMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<FluidMaterial>>,
 ) {
