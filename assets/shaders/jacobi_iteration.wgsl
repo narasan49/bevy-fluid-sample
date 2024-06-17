@@ -1,14 +1,10 @@
+#import bevy_fluid::fluid_uniform::SimulationUniform;
+
 @group(0) @binding(0) var div: texture_storage_2d<r32float, read_write>;
 @group(0) @binding(1) var p_in: texture_storage_2d<r32float, read_write>;
 @group(0) @binding(2) var p_out: texture_storage_2d<r32float, read_write>;
 
 @group(1) @binding(0) var<uniform> constants: SimulationUniform;
-
-struct SimulationUniform {
-    dx: f32,
-    dt: f32,
-    rho: f32,
-}
 
 @compute @workgroup_size(8, 8, 1)
 fn jacobi_iteration(@builtin(global_invocation_id) invocation_id: vec3<u32>) {

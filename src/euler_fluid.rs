@@ -5,10 +5,9 @@ pub mod uniform;
 
 use advection::{AdvectionMaterial, AdvectionPipeline, AdvectionBindGroup};
 use bevy::{
-    prelude::*,
-    render::{
+    asset::load_internal_asset, prelude::*, render::{
         extract_component::{ComponentUniforms, ExtractComponentPlugin, UniformComponentPlugin}, extract_resource::ExtractResourcePlugin, graph::CameraDriverLabel, render_graph::{self, RenderGraph, RenderLabel}, render_resource::{binding_types::uniform_buffer, *}, renderer::RenderDevice, Render, RenderApp, RenderSet
-    },
+    }, utils::Uuid
 };
 use projection::{divergence::{self, DivergenceBindGroup, DivergenceMaterial, DivergencePipeline}, jacobi_iteration::{self, JacobiBindGroup, JacobiMaterial, JacobiPipeline}, solve::{self, SolvePressureBindGroup, SolvePressureMaterial, SolvePressurePipeline}};
 use uniform::{SimulationUniform, SimulationUniformBindGroup};
@@ -48,6 +47,13 @@ impl Plugin for FluidPlugin {
         let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
         render_graph.add_node(FluidLabel, FluidNode::default());
         render_graph.add_node_edge(FluidLabel, CameraDriverLabel);
+        
+        load_internal_asset!(
+            app,
+            Uuid::new_v4(),
+            "../assets/shaders/fluid_uniform.wgsl",
+            Shader::from_wgsl
+        );
     }
 
     fn finish(&self, app: &mut App) {
