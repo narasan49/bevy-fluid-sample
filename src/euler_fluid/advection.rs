@@ -5,10 +5,14 @@ use bevy::{
     render::{
         extract_resource::ExtractResource,
         render_asset::RenderAssets,
-        render_resource::{binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupEntries, BindGroupLayout, BindGroupLayoutEntries, CachedComputePipelineId, ComputePipelineDescriptor, PipelineCache, ShaderStages, ShaderType},
+        render_resource::{
+            binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupEntries,
+            BindGroupLayout, BindGroupLayoutEntries, CachedComputePipelineId,
+            ComputePipelineDescriptor, PipelineCache, ShaderStages, ShaderType,
+        },
         renderer::RenderDevice,
         texture::FallbackImage,
-    }
+    },
 };
 
 use super::uniform::SimulationUniform;
@@ -19,13 +23,17 @@ pub fn prepare_bind_group(
     gpu_images: Res<RenderAssets<Image>>,
     textures: Res<AdvectionMaterial>,
     render_device: Res<RenderDevice>,
-    fallback_image: Res<FallbackImage>
+    fallback_image: Res<FallbackImage>,
 ) {
-    let bind_group = textures.as_bind_group(
-        &pipeline.bind_group_layout,
-        &render_device,
-        &gpu_images,
-        &fallback_image).unwrap().bind_group;
+    let bind_group = textures
+        .as_bind_group(
+            &pipeline.bind_group_layout,
+            &render_device,
+            &gpu_images,
+            &fallback_image,
+        )
+        .unwrap()
+        .bind_group;
 
     commands.insert_resource(AdvectionBindGroup(bind_group));
 }
@@ -64,7 +72,9 @@ impl FromWorld for AdvectionPipeline {
                 uniform_buffer::<SimulationUniform>(false),
             ),
         );
-        let shader = world.resource::<AssetServer>().load("shaders/advection.wgsl");
+        let shader = world
+            .resource::<AssetServer>()
+            .load("shaders/advection.wgsl");
         let pipeline_cache = world.resource::<PipelineCache>();
         let pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: None,

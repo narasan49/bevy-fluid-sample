@@ -1,6 +1,20 @@
 use std::borrow::Cow;
 
-use bevy::{asset::{AssetServer, Handle}, prelude::*, render::{extract_resource::ExtractResource, render_asset::RenderAssets, render_resource::{binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupLayout, BindGroupLayoutEntries, CachedComputePipelineId, ComputePipelineDescriptor, PipelineCache, ShaderStages}, renderer::RenderDevice, texture::{FallbackImage, Image}}};
+use bevy::{
+    asset::{AssetServer, Handle},
+    prelude::*,
+    render::{
+        extract_resource::ExtractResource,
+        render_asset::RenderAssets,
+        render_resource::{
+            binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupLayout,
+            BindGroupLayoutEntries, CachedComputePipelineId, ComputePipelineDescriptor,
+            PipelineCache, ShaderStages,
+        },
+        renderer::RenderDevice,
+        texture::{FallbackImage, Image},
+    },
+};
 
 use crate::euler_fluid::uniform::SimulationUniform;
 
@@ -28,15 +42,17 @@ impl FromWorld for JacobiPipeline {
     fn from_world(world: &mut bevy::prelude::World) -> Self {
         let render_device = world.resource();
         let bind_group_layout = JacobiMaterial::bind_group_layout(render_device);
-        let shader = world.resource::<AssetServer>().load("shaders/jacobi_iteration.wgsl");
+        let shader = world
+            .resource::<AssetServer>()
+            .load("shaders/jacobi_iteration.wgsl");
         let pipeline_cache = world.resource::<PipelineCache>();
-        
+
         let uniform_bind_group_layout = render_device.create_bind_group_layout(
             None,
             &BindGroupLayoutEntries::single(
                 ShaderStages::COMPUTE,
-                uniform_buffer::<SimulationUniform>(false)
-            )
+                uniform_buffer::<SimulationUniform>(false),
+            ),
         );
 
         let pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
@@ -73,12 +89,15 @@ pub fn prepare_bind_group(
     material: Res<JacobiMaterial>,
     fallback_image: Res<FallbackImage>,
 ) {
-    let bind_group = material.as_bind_group(
-        &pipeline.bind_group_layout,
-        &render_device,
-        &gpu_images,
-        &fallback_image
-    ).unwrap().bind_group;
+    let bind_group = material
+        .as_bind_group(
+            &pipeline.bind_group_layout,
+            &render_device,
+            &gpu_images,
+            &fallback_image,
+        )
+        .unwrap()
+        .bind_group;
 
     commands.insert_resource(JacobiBindGroup(bind_group));
 }

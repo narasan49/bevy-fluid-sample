@@ -1,4 +1,7 @@
-use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}};
+use bevy::{
+    prelude::*,
+    render::render_resource::{AsBindGroup, ShaderRef},
+};
 
 #[derive(Asset, Clone, AsBindGroup, TypePath, Debug)]
 pub struct FluidMaterial {

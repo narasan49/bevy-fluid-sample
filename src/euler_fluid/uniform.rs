@@ -1,4 +1,10 @@
-use bevy::{prelude::{Component, Resource}, render::{extract_component::ExtractComponent, render_resource::{BindGroup, ShaderType}}};
+use bevy::{
+    prelude::{Component, Resource},
+    render::{
+        extract_component::ExtractComponent,
+        render_resource::{BindGroup, ShaderType},
+    },
+};
 
 #[derive(Component, ExtractComponent, ShaderType, Clone, Copy, Default)]
 pub struct DeltaTimeUniform {
@@ -18,6 +24,4 @@ pub struct SimulationUniform {
 #[derive(Resource)]
 pub struct SimulationUniformBindGroup(pub BindGroup);
 
-pub fn create_simulation_uniform_bind_group_layout() {
-
-}
+pub fn create_simulation_uniform_bind_group_layout() {}

@@ -3,13 +3,26 @@ pub mod fluid_material;
 pub mod projection;
 pub mod uniform;
 
-use advection::{AdvectionMaterial, AdvectionPipeline, AdvectionBindGroup};
+use advection::{AdvectionBindGroup, AdvectionMaterial, AdvectionPipeline};
 use bevy::{
-    asset::load_internal_asset, prelude::*, render::{
-        extract_component::{ComponentUniforms, ExtractComponentPlugin, UniformComponentPlugin}, extract_resource::ExtractResourcePlugin, graph::CameraDriverLabel, render_graph::{self, RenderGraph, RenderLabel}, render_resource::{binding_types::uniform_buffer, *}, renderer::RenderDevice, Render, RenderApp, RenderSet
-    }, utils::Uuid
+    asset::load_internal_asset,
+    prelude::*,
+    render::{
+        extract_component::{ComponentUniforms, ExtractComponentPlugin, UniformComponentPlugin},
+        extract_resource::ExtractResourcePlugin,
+        graph::CameraDriverLabel,
+        render_graph::{self, RenderGraph, RenderLabel},
+        render_resource::{binding_types::uniform_buffer, *},
+        renderer::RenderDevice,
+        Render, RenderApp, RenderSet,
+    },
+    utils::Uuid,
 };
-use projection::{divergence::{self, DivergenceBindGroup, DivergenceMaterial, DivergencePipeline}, jacobi_iteration::{self, JacobiBindGroup, JacobiMaterial, JacobiPipeline}, solve::{self, SolvePressureBindGroup, SolvePressureMaterial, SolvePressurePipeline}};
+use projection::{
+    divergence::{self, DivergenceBindGroup, DivergenceMaterial, DivergencePipeline},
+    jacobi_iteration::{self, JacobiBindGroup, JacobiMaterial, JacobiPipeline},
+    solve::{self, SolvePressureBindGroup, SolvePressureMaterial, SolvePressurePipeline},
+};
 use uniform::{SimulationUniform, SimulationUniformBindGroup};
 
 use crate::texture::ImageForCS;
@@ -38,16 +51,32 @@ impl Plugin for FluidPlugin {
             .add_systems(Update, update);
 
         let render_app = app.sub_app_mut(RenderApp);
-        render_app.add_systems(Render, prepare_bind_group.in_set(RenderSet::PrepareBindGroups))
-            .add_systems(Render, advection::prepare_bind_group.in_set(RenderSet::PrepareBindGroups))
-            .add_systems(Render, divergence::prepare_bind_group.in_set(RenderSet::PrepareBindGroups))
-            .add_systems(Render, solve::prepare_bind_group.in_set(RenderSet::PrepareBindGroups))
-            .add_systems(Render, jacobi_iteration::prepare_bind_group.in_set(RenderSet::PrepareBindGroups));
+        render_app
+            .add_systems(
+                Render,
+                prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                advection::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                divergence::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                solve::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                jacobi_iteration::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            );
 
         let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
         render_graph.add_node(FluidLabel, FluidNode::default());
         render_graph.add_node_edge(FluidLabel, CameraDriverLabel);
-        
+
         load_internal_asset!(
             app,
             Uuid::new_v4(),
@@ -70,13 +99,13 @@ fn prepare_bind_group(
     mut commands: Commands,
     render_device: Res<RenderDevice>,
     uniform: Res<ComponentUniforms<SimulationUniform>>,
-) {    
+) {
     let uniform = uniform.uniforms().binding().unwrap();
 
     let bind_group_layout = render_device.create_bind_group_layout(
         None,
         &BindGroupLayoutEntries::single(
-            ShaderStages::COMPUTE, 
+            ShaderStages::COMPUTE,
             uniform_buffer::<SimulationUniform>(false),
         ),
     );
@@ -119,10 +148,8 @@ fn setup(
     let p1 = Image::new_texture_storage(SIZE, TextureFormat::R32Float);
     let p1 = images.add(p1);
 
-    let mesh = meshes.add(
-        Mesh::from(Plane3d::default())
-    );
-    
+    let mesh = meshes.add(Mesh::from(Plane3d::default()));
+
     let material = materials.add(FluidMaterial {
         base_color: Color::RED,
         velocity_texture: Some(p0.clone()),
@@ -134,22 +161,42 @@ fn setup(
             mesh,
             material,
             ..default()
-        }
+        },
     });
 
     info!("inserting fluid resources.");
-    commands.insert_resource(AdvectionMaterial { u_in: u0.clone(), u_out: u1.clone(), v_in: v0.clone(), v_out: v1.clone() });
-    commands.insert_resource(DivergenceMaterial { u: u1.clone(), v: v1.clone(), div: div.clone() });
-    commands.insert_resource(JacobiMaterial { p0: p0.clone(), p1: p1.clone(), div: div.clone() });
-    commands.insert_resource(SolvePressureMaterial { u_in: u1, v_in: v1, u_out: u0, v_out: v0, p: p0});
-    
-    commands.spawn(SimulationUniform { dx: 1.0f32, dt: 0.1f32, rho: 1.293f32 });
+    commands.insert_resource(AdvectionMaterial {
+        u_in: u0.clone(),
+        u_out: u1.clone(),
+        v_in: v0.clone(),
+        v_out: v1.clone(),
+    });
+    commands.insert_resource(DivergenceMaterial {
+        u: u1.clone(),
+        v: v1.clone(),
+        div: div.clone(),
+    });
+    commands.insert_resource(JacobiMaterial {
+        p0: p0.clone(),
+        p1: p1.clone(),
+        div: div.clone(),
+    });
+    commands.insert_resource(SolvePressureMaterial {
+        u_in: u1,
+        v_in: v1,
+        u_out: u0,
+        v_out: v0,
+        p: p0,
+    });
+
+    commands.spawn(SimulationUniform {
+        dx: 1.0f32,
+        dt: 0.1f32,
+        rho: 1.293f32,
+    });
 }
 
-fn update(
-    mut query: Query<&mut SimulationUniform>,
-    _time: Res<Time>,
-) {
+fn update(mut query: Query<&mut SimulationUniform>, _time: Res<Time>) {
     for mut uniform in &mut query {
         uniform.dt = 0.1;
     }
@@ -187,15 +234,21 @@ impl render_graph::Node for FluidNode {
 
         match self.state {
             FluidState::Loading => {
-                if let CachedPipelineState::Ok(_) = pipeline_cache.get_compute_pipeline_state(advection_pipeline.init_pipeline) {
+                if let CachedPipelineState::Ok(_) =
+                    pipeline_cache.get_compute_pipeline_state(advection_pipeline.init_pipeline)
+                {
                     self.state = FluidState::Init;
                 }
             }
             FluidState::Init => {
-                let advection_pipeline = pipeline_cache.get_compute_pipeline_state(advection_pipeline.pipeline);
-                let jacobi_pipeline = pipeline_cache.get_compute_pipeline_state(jacobi_pipeline.pipeline);
-                let solve_pipeline = pipeline_cache.get_compute_pipeline_state(solve_pipeline.pipeline);
-                let divergence_pipeline = pipeline_cache.get_compute_pipeline_state(divergence_pipeline.pipeline);
+                let advection_pipeline =
+                    pipeline_cache.get_compute_pipeline_state(advection_pipeline.pipeline);
+                let jacobi_pipeline =
+                    pipeline_cache.get_compute_pipeline_state(jacobi_pipeline.pipeline);
+                let solve_pipeline =
+                    pipeline_cache.get_compute_pipeline_state(solve_pipeline.pipeline);
+                let divergence_pipeline =
+                    pipeline_cache.get_compute_pipeline_state(divergence_pipeline.pipeline);
                 match (
                     advection_pipeline,
                     jacobi_pipeline,
@@ -207,9 +260,7 @@ impl render_graph::Node for FluidNode {
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
-                    ) => {
-                        self.state = FluidState::Update
-                    }
+                    ) => self.state = FluidState::Update,
                     _ => {}
                 }
             }
@@ -218,29 +269,34 @@ impl render_graph::Node for FluidNode {
     }
 
     fn run<'w>(
-            &self,
-            _graph: &mut render_graph::RenderGraphContext,
-            render_context: &mut bevy::render::renderer::RenderContext<'w>,
-            world: &'w World,
-        ) -> Result<(), render_graph::NodeRunError> {
-        
+        &self,
+        _graph: &mut render_graph::RenderGraphContext,
+        render_context: &mut bevy::render::renderer::RenderContext<'w>,
+        world: &'w World,
+    ) -> Result<(), render_graph::NodeRunError> {
         let advection_pipeline = world.resource::<AdvectionPipeline>();
         let pipeline_cache = world.resource::<PipelineCache>();
-        
+
         let uniform_bind_group = &world.resource::<SimulationUniformBindGroup>().0;
-        let mut pass = render_context.command_encoder().begin_compute_pass(&ComputePassDescriptor::default());
+        let mut pass = render_context
+            .command_encoder()
+            .begin_compute_pass(&ComputePassDescriptor::default());
 
         match self.state {
             FluidState::Loading => {}
             FluidState::Init => {
-                let init_pipeline = pipeline_cache.get_compute_pipeline(advection_pipeline.init_pipeline).unwrap();
+                let init_pipeline = pipeline_cache
+                    .get_compute_pipeline(advection_pipeline.init_pipeline)
+                    .unwrap();
                 let advection_bind_group = &world.resource::<AdvectionBindGroup>().0;
                 pass.set_pipeline(init_pipeline);
                 pass.set_bind_group(0, advection_bind_group, &[]);
-                pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1  / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
+                pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
             }
             FluidState::Update => {
-                let advection_pipeline = pipeline_cache.get_compute_pipeline(advection_pipeline.pipeline).unwrap();
+                let advection_pipeline = pipeline_cache
+                    .get_compute_pipeline(advection_pipeline.pipeline)
+                    .unwrap();
                 let advection_bind_group = &world.resource::<AdvectionBindGroup>().0;
                 pass.set_pipeline(advection_pipeline);
                 pass.set_bind_group(0, advection_bind_group, &[]);
@@ -248,15 +304,21 @@ impl render_graph::Node for FluidNode {
                 pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
 
                 let divergence_pipeline = world.resource::<DivergencePipeline>();
-                let divergence_pipeline = pipeline_cache.get_compute_pipeline(divergence_pipeline.pipeline).unwrap();
+                let divergence_pipeline = pipeline_cache
+                    .get_compute_pipeline(divergence_pipeline.pipeline)
+                    .unwrap();
                 let divergence_bind_group = &world.resource::<DivergenceBindGroup>().0;
                 pass.set_bind_group(0, divergence_bind_group, &[]);
                 pass.set_pipeline(&divergence_pipeline);
                 pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
 
                 let jacobi_pipeline_bundle = world.resource::<JacobiPipeline>();
-                let jacobi_pipeline = pipeline_cache.get_compute_pipeline(jacobi_pipeline_bundle.pipeline).unwrap();
-                let swap_pipeline = pipeline_cache.get_compute_pipeline(jacobi_pipeline_bundle.swap_pipeline).unwrap();
+                let jacobi_pipeline = pipeline_cache
+                    .get_compute_pipeline(jacobi_pipeline_bundle.pipeline)
+                    .unwrap();
+                let swap_pipeline = pipeline_cache
+                    .get_compute_pipeline(jacobi_pipeline_bundle.swap_pipeline)
+                    .unwrap();
                 let jacobi_bind_group = &world.resource::<JacobiBindGroup>().0;
                 pass.set_bind_group(0, jacobi_bind_group, &[]);
                 for _ in 0..30 {
@@ -267,7 +329,9 @@ impl render_graph::Node for FluidNode {
                 }
 
                 let solve_pipeline = world.resource::<SolvePressurePipeline>();
-                let solve_pipeline = pipeline_cache.get_compute_pipeline(solve_pipeline.pipeline).unwrap();
+                let solve_pipeline = pipeline_cache
+                    .get_compute_pipeline(solve_pipeline.pipeline)
+                    .unwrap();
                 let solve_bind_group = &world.resource::<SolvePressureBindGroup>().0;
                 pass.set_pipeline(&solve_pipeline);
                 pass.set_bind_group(0, &solve_bind_group, &[]);
@@ -290,7 +354,7 @@ mod test {
     #[test]
     fn rb32float_to_bytes() {
         let rg = &[0.0f32, 0.0f32];
-        let bytes = bytemuck::bytes_of::<[f32;2]>(rg);
-        assert_eq!(bytes, &[0;8]);
+        let bytes = bytemuck::bytes_of::<[f32; 2]>(rg);
+        assert_eq!(bytes, &[0; 8]);
     }
 }
