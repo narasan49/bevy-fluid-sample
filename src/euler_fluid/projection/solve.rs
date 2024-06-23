@@ -4,7 +4,6 @@ use bevy::{
     asset::{AssetServer, Handle},
     prelude::*,
     render::{
-        extract_component::ComponentUniforms,
         extract_resource::ExtractResource,
         render_asset::RenderAssets,
         render_resource::{
@@ -17,7 +16,7 @@ use bevy::{
     },
 };
 
-use crate::euler_fluid::uniform::{SimulationUniform, SimulationUniformBindGroup};
+use crate::euler_fluid::uniform::SimulationUniform;
 
 #[derive(Resource, ExtractResource, AsBindGroup, Clone)]
 pub struct SolvePressureMaterial {

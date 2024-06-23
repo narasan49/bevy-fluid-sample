@@ -23,5 +23,3 @@ pub struct SimulationUniform {
 
 #[derive(Resource)]
 pub struct SimulationUniformBindGroup(pub BindGroup);
-
-pub fn create_simulation_uniform_bind_group_layout() {}

@@ -2,7 +2,7 @@ mod advection_plugin;
 mod euler_fluid;
 mod texture;
 
-use advection_plugin::AdvectionPlugin;
+// use advection_plugin::AdvectionPlugin;
 use bevy::{
     prelude::*,
     render::{

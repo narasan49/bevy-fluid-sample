@@ -6,9 +6,9 @@ use bevy::{
         extract_resource::ExtractResource,
         render_asset::RenderAssets,
         render_resource::{
-            binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupEntries,
-            BindGroupLayout, BindGroupLayoutEntries, CachedComputePipelineId,
-            ComputePipelineDescriptor, PipelineCache, ShaderStages, ShaderType,
+            binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupLayout,
+            BindGroupLayoutEntries, CachedComputePipelineId, ComputePipelineDescriptor,
+            PipelineCache, ShaderStages,
         },
         renderer::RenderDevice,
         texture::FallbackImage,
