@@ -1,6 +1,5 @@
 mod advection_plugin;
 mod euler_fluid;
-mod geometry;
 mod texture;
 
 // use advection_plugin::AdvectionPlugin;
