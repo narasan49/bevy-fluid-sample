@@ -7,6 +7,8 @@
 
 @group(1) @binding(0) var<uniform> constants: SimulationUniform;
 
+@group(2) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
+
 // ToDo: Move to a separate file
 @compute @workgroup_size(1, 64, 1)
 fn initialize(
@@ -20,6 +22,10 @@ fn initialize(
     textureStore(u_out, x_u, vec4<f32>(speed, 0.0, 0.0, 0.0));
     textureStore(v_in, x_v, vec4<f32>(speed, 0.0, 0.0, 0.0));
     textureStore(v_out, x_v, vec4<f32>(speed, 0.0, 0.0, 0.0));
+
+    // Initialize grid_label
+    let circle = u32(step(length(vec2<f32>(f32(invocation_id.x) - 128.0, f32(invocation_id.y) - 128.0)), 50.0) + 1);
+    textureStore(grid_label, x_u, vec4<u32>(circle, 0, 0, 0));
 }
 
 @compute @workgroup_size(1, 64, 1)
@@ -27,15 +33,33 @@ fn advection(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {
     let x_u = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
-    let backtraced_x_u: vec2<f32> = runge_kutta(u_in, v_in, x_u, constants.dt);
-    let backtraced_u: f32 = u_at(u_in, backtraced_x_u);
-
     let x_v = vec2<i32>(x_u.y, x_u.x);
-    let backtraced_x_v: vec2<f32> = runge_kutta(u_in, v_in, x_v, constants.dt);
-    let backtraced_v: f32 = v_at(v_in, backtraced_x_v);
-    
-    textureStore(u_out, x_u, vec4<f32>(backtraced_u, 0.0, 0.0, 0.0));
-    textureStore(v_out, x_v, vec4<f32>(backtraced_v, 0.0, 0.0, 0.0));
+
+    let label_u = textureLoad(grid_label, x_u - vec2<i32>(0, 1)).r;
+    let label_uplus = textureLoad(grid_label, x_u).r;
+    if (label_u == 2 || label_uplus == 2) {
+        let u_solid = 0.0;
+        textureStore(u_out, x_u, vec4<f32>(u_solid, 0.0, 0.0, 0.0));
+    } else if (label_u == 0 || label_uplus == 0) {
+        textureStore(u_out, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    } else {
+        let backtraced_x_u: vec2<f32> = runge_kutta(u_in, v_in, x_u, constants.dt);
+        let backtraced_u: f32 = u_at(u_in, backtraced_x_u);
+        textureStore(u_out, x_u, vec4<f32>(backtraced_u, 0.0, 0.0, 0.0));
+    }
+
+    let label_v = textureLoad(grid_label, x_v - vec2<i32>(0, 1)).r;
+    let label_vplus = textureLoad(grid_label, x_v).r;
+    if (label_v == 2 || label_vplus == 2) {
+        let v_solid = 0.0;
+        textureStore(v_out, x_v, vec4<f32>(v_solid, 0.0, 0.0, 0.0));
+    } else if (label_v == 0 || label_vplus == 0) {
+        textureStore(v_out, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    } else {
+        let backtraced_x_v: vec2<f32> = runge_kutta(u_in, v_in, x_v, constants.dt);
+        let backtraced_v: f32 = v_at(v_in, backtraced_x_v);
+        textureStore(v_out, x_v, vec4<f32>(backtraced_v, 0.0, 0.0, 0.0));
+    }
 }
 
 // ToDo: Move to a separate file

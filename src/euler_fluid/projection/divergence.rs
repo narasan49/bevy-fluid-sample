@@ -15,6 +15,8 @@ use bevy::{
     },
 };
 
+use crate::euler_fluid::grid_label::GridLabelMaterial;
+
 #[derive(Resource, ExtractResource, AsBindGroup, Clone)]
 pub struct DivergenceMaterial {
     #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
@@ -38,6 +40,7 @@ impl FromWorld for DivergencePipeline {
     fn from_world(world: &mut bevy::prelude::World) -> Self {
         let render_device = world.resource::<RenderDevice>();
         let bind_group_layout = DivergenceMaterial::bind_group_layout(render_device);
+        let grid_label_bind_group_layout = GridLabelMaterial::bind_group_layout(render_device);
         let shader = world
             .resource::<AssetServer>()
             .load("shaders/divergence.wgsl");
@@ -45,7 +48,10 @@ impl FromWorld for DivergencePipeline {
         let pipeline_cache = world.resource::<PipelineCache>();
         let pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: None,
-            layout: vec![bind_group_layout.clone()],
+            layout: vec![
+                bind_group_layout.clone(),
+                grid_label_bind_group_layout.clone(),
+            ],
             push_constant_ranges: vec![],
             shader,
             shader_defs: vec![],

@@ -14,13 +14,19 @@ fn solve_pressure(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
 
     let x_u = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
     let p1_u = textureLoad(pressure, x_u).r;
-    let p0_u = textureLoad(pressure, x_u - vec2<i32>(1, 0)).r;
+    var p0_u = 0.0;
+    if x_u.x != 0 { 
+        p0_u = textureLoad(pressure, x_u - vec2<i32>(1, 0)).r;
+    }
     let u = textureLoad(u_in, x_u);
     let du = vec4<f32>(factor * (p1_u - p0_u), 0.0, 0.0, 0.0);
 
     let x_v = vec2<i32>(x_u.y, x_u.x);
     let p1_v = textureLoad(pressure, x_v).r;
-    let p0_v = textureLoad(pressure, x_v - vec2<i32>(0, 1)).r;
+    var p0_v = 0.0;
+    if x_v.y != 0 {
+        p0_v = textureLoad(pressure, x_v - vec2<i32>(0, 1)).r;
+    }
     let v = textureLoad(v_in, x_v);
     let dv = vec4<f32>(factor * (p1_v - p0_v), 0.0, 0.0, 0.0);
 

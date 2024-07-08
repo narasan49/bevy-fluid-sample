@@ -15,7 +15,7 @@ use bevy::{
     },
 };
 
-use super::uniform::SimulationUniform;
+use super::{grid_label::GridLabelMaterial, uniform::SimulationUniform};
 
 pub fn prepare_bind_group(
     mut commands: Commands,
@@ -72,13 +72,19 @@ impl FromWorld for AdvectionPipeline {
                 uniform_buffer::<SimulationUniform>(false),
             ),
         );
+        let grid_label_bind_group_layout = GridLabelMaterial::bind_group_layout(render_device);
+
         let shader = world
             .resource::<AssetServer>()
             .load("shaders/advection.wgsl");
         let pipeline_cache = world.resource::<PipelineCache>();
         let pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: None,
-            layout: vec![bind_group_layout.clone(), uniform_bind_group_layout.clone()],
+            layout: vec![
+                bind_group_layout.clone(),
+                uniform_bind_group_layout.clone(),
+                grid_label_bind_group_layout.clone(),
+            ],
             push_constant_ranges: Vec::new(),
             shader: shader.clone(),
             shader_defs: vec![],
@@ -87,7 +93,11 @@ impl FromWorld for AdvectionPipeline {
 
         let init_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: None,
-            layout: vec![bind_group_layout.clone()],
+            layout: vec![
+                bind_group_layout.clone(),
+                uniform_bind_group_layout.clone(),
+                grid_label_bind_group_layout.clone(),
+            ],
             push_constant_ranges: Vec::new(),
             shader: shader.clone(),
             shader_defs: vec![],

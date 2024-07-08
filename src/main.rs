@@ -56,7 +56,7 @@ fn setup_scene(mut commands: Commands) {
     commands
         .spawn((
             Camera3dBundle {
-                transform: Transform::from_xyz(-2.0, 2.5, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
+                transform: Transform::from_xyz(0.0, 2.5, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
                 ..default()
             },
             CameraMarker,
@@ -88,7 +88,7 @@ fn on_advection_initialized(
         if advection.is_changed() {
             // spwan plane to visualize advection
             let mesh =
-                meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(2.0, 0.0, 1.0)));
+                meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(2.0, 0.0, 0.0)));
             let material = materials.add(FluidMaterial {
                 base_color: Color::RED,
                 velocity_texture: Some(advection.u_in.clone()),
