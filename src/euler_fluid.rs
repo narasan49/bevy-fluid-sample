@@ -1,5 +1,6 @@
 pub mod advection;
 pub mod fluid_material;
+pub mod grid_label;
 pub mod projection;
 pub mod uniform;
 
@@ -18,6 +19,7 @@ use bevy::{
     },
     utils::Uuid,
 };
+use grid_label::{GridLabelBindGroup, GridLabelMaterial};
 use projection::{
     divergence::{self, DivergenceBindGroup, DivergenceMaterial, DivergencePipeline},
     jacobi_iteration::{self, JacobiBindGroup, JacobiMaterial, JacobiPipeline},
@@ -44,6 +46,7 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractResourcePlugin::<DivergenceMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<SolvePressureMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<JacobiMaterial>::default())
+            .add_plugins(ExtractResourcePlugin::<GridLabelMaterial>::default())
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())
@@ -71,6 +74,10 @@ impl Plugin for FluidPlugin {
             .add_systems(
                 Render,
                 jacobi_iteration::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                grid_label::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
             );
 
         let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
@@ -148,6 +155,9 @@ fn setup(
     let p1 = Image::new_texture_storage(SIZE, TextureFormat::R32Float);
     let p1 = images.add(p1);
 
+    let grid_label = Image::new_texture_storage(SIZE, TextureFormat::R32Uint);
+    let grid_label = images.add(grid_label);
+
     let mesh = meshes.add(Mesh::from(Plane3d::default()));
 
     let material = materials.add(FluidMaterial {
@@ -188,6 +198,7 @@ fn setup(
         v_out: v0,
         p: p0,
     });
+    commands.insert_resource(GridLabelMaterial { grid_label });
 
     commands.spawn(SimulationUniform {
         dx: 1.0f32,
@@ -289,8 +300,11 @@ impl render_graph::Node for FluidNode {
                     .get_compute_pipeline(advection_pipeline.init_pipeline)
                     .unwrap();
                 let advection_bind_group = &world.resource::<AdvectionBindGroup>().0;
+                let grid_label_bind_group = &world.resource::<GridLabelBindGroup>().0;
                 pass.set_pipeline(init_pipeline);
                 pass.set_bind_group(0, advection_bind_group, &[]);
+                pass.set_bind_group(1, uniform_bind_group, &[]);
+                pass.set_bind_group(2, grid_label_bind_group, &[]);
                 pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
             }
             FluidState::Update => {
@@ -298,9 +312,11 @@ impl render_graph::Node for FluidNode {
                     .get_compute_pipeline(advection_pipeline.pipeline)
                     .unwrap();
                 let advection_bind_group = &world.resource::<AdvectionBindGroup>().0;
+                let grid_label_bind_group = &world.resource::<GridLabelBindGroup>().0;
                 pass.set_pipeline(advection_pipeline);
                 pass.set_bind_group(0, advection_bind_group, &[]);
                 pass.set_bind_group(1, uniform_bind_group, &[]);
+                pass.set_bind_group(2, grid_label_bind_group, &[]);
                 pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
 
                 let divergence_pipeline = world.resource::<DivergencePipeline>();
@@ -309,6 +325,7 @@ impl render_graph::Node for FluidNode {
                     .unwrap();
                 let divergence_bind_group = &world.resource::<DivergenceBindGroup>().0;
                 pass.set_bind_group(0, divergence_bind_group, &[]);
+                pass.set_bind_group(1, grid_label_bind_group, &[]);
                 pass.set_pipeline(&divergence_pipeline);
                 pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
 
@@ -321,6 +338,8 @@ impl render_graph::Node for FluidNode {
                     .unwrap();
                 let jacobi_bind_group = &world.resource::<JacobiBindGroup>().0;
                 pass.set_bind_group(0, jacobi_bind_group, &[]);
+                pass.set_bind_group(1, uniform_bind_group, &[]);
+                pass.set_bind_group(2, grid_label_bind_group, &[]);
                 for _ in 0..30 {
                     pass.set_pipeline(&jacobi_pipeline);
                     pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
