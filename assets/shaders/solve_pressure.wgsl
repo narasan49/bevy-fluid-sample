@@ -8,6 +8,8 @@
 
 @group(1) @binding(0) var<uniform> constants: SimulationUniform;
 
+@group(2) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
+
 @compute @workgroup_size(1, 64, 1)
 fn solve_pressure(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
     let factor = constants.dt / (constants.dx * constants.rho);
@@ -21,6 +23,15 @@ fn solve_pressure(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
     let u = textureLoad(u_in, x_u);
     let du = vec4<f32>(factor * (p1_u - p0_u), 0.0, 0.0, 0.0);
 
+    let grid_label_u0 = textureLoad(grid_label, x_u - vec2<i32>(1, 0)).r;
+    let grid_label_u1 = textureLoad(grid_label, x_u).r;
+    if (grid_label_u0 == 2 || grid_label_u1 == 2) {
+        let u_solid = 0.0;
+        textureStore(u_out, x_u, vec4<f32>(u_solid, 0.0, 0.0, 0.0));
+    } else {
+        textureStore(u_out, x_u, u - du);
+    }
+
     let x_v = vec2<i32>(x_u.y, x_u.x);
     let p1_v = textureLoad(pressure, x_v).r;
     var p0_v = 0.0;
@@ -30,6 +41,20 @@ fn solve_pressure(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
     let v = textureLoad(v_in, x_v);
     let dv = vec4<f32>(factor * (p1_v - p0_v), 0.0, 0.0, 0.0);
 
-    textureStore(u_out, x_u, u - du);
-    textureStore(v_out, x_v, v - dv);
+    let grid_label_v0 = textureLoad(grid_label, x_v - vec2<i32>(0, 1)).r;
+    let grid_label_v1 = textureLoad(grid_label, x_v).r;
+    if (grid_label_v0 == 2 || grid_label_v1 == 2) {
+        let v_solid = 0.0;
+        textureStore(v_out, x_v, vec4<f32>(v_solid, 0.0, 0.0, 0.0));
+    } else {
+        textureStore(v_out, x_v, v - dv);
+    }
+}
+
+fn is_solid(label: texture_storage_2d<r32uint, read_write>, x: vec2<i32>) -> f32 {
+    if (textureLoad(label, x).r == 2) {
+        return 1.0;
+    } else {
+        return 0.0;
+    }
 }

@@ -16,7 +16,7 @@ use bevy::{
     },
 };
 
-use crate::euler_fluid::uniform::SimulationUniform;
+use crate::euler_fluid::{grid_label::GridLabelMaterial, uniform::SimulationUniform};
 
 #[derive(Resource, ExtractResource, AsBindGroup, Clone)]
 pub struct SolvePressureMaterial {
@@ -45,6 +45,7 @@ impl FromWorld for SolvePressurePipeline {
     fn from_world(world: &mut bevy::prelude::World) -> Self {
         let render_device = world.resource::<RenderDevice>();
         let bind_group_layout = SolvePressureMaterial::bind_group_layout(render_device);
+        let grid_label_bind_group_layout = GridLabelMaterial::bind_group_layout(render_device);
         let shader = world
             .resource::<AssetServer>()
             .load("shaders/solve_pressure.wgsl");
@@ -60,7 +61,7 @@ impl FromWorld for SolvePressurePipeline {
 
         let pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: Some(Cow::from("Solve Pressure")),
-            layout: vec![bind_group_layout.clone(), uniform_bind_group_layout.clone()],
+            layout: vec![bind_group_layout.clone(), uniform_bind_group_layout.clone(), grid_label_bind_group_layout.clone()],
             push_constant_ranges: vec![],
             shader,
             shader_defs: vec![],
