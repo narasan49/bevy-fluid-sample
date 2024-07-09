@@ -11,7 +11,7 @@ use bevy::{
             PipelineCache, ShaderStages,
         },
         renderer::RenderDevice,
-        texture::FallbackImage,
+        texture::{FallbackImage, GpuImage},
     },
 };
 
@@ -20,7 +20,7 @@ use super::{grid_label::GridLabelMaterial, uniform::SimulationUniform};
 pub fn prepare_bind_group(
     mut commands: Commands,
     pipeline: Res<AdvectionPipeline>,
-    gpu_images: Res<RenderAssets<Image>>,
+    gpu_images: Res<RenderAssets<GpuImage>>,
     textures: Res<AdvectionMaterial>,
     render_device: Res<RenderDevice>,
     fallback_image: Res<FallbackImage>,

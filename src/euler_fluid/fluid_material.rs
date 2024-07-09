@@ -6,7 +6,7 @@ use bevy::{
 #[derive(Asset, Clone, AsBindGroup, TypePath, Debug)]
 pub struct FluidMaterial {
     #[uniform(0)]
-    pub base_color: Color,
+    pub base_color: LinearRgba,
     #[texture(1)]
     #[sampler(2)]
     pub velocity_texture: Option<Handle<Image>>,

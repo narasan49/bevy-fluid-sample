@@ -17,7 +17,6 @@ use bevy::{
         renderer::RenderDevice,
         Render, RenderApp, RenderSet,
     },
-    utils::Uuid,
 };
 use grid_label::{GridLabelBindGroup, GridLabelMaterial};
 use projection::{
@@ -35,6 +34,8 @@ const SIZE: (u32, u32) = (512, 512);
 const SIZE_U: (u32, u32) = (SIZE.0 + 1, SIZE.1);
 const SIZE_V: (u32, u32) = (SIZE.0, SIZE.1 + 1);
 const WORKGROUP_SIZE: u32 = 8;
+
+const FLUID_UNIFORM_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(0x8B9323522322463BA8CF530771C532EF);
 
 pub struct FluidPlugin;
 
@@ -80,13 +81,13 @@ impl Plugin for FluidPlugin {
                 grid_label::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
             );
 
-        let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
+        let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
         render_graph.add_node(FluidLabel, FluidNode::default());
         render_graph.add_node_edge(FluidLabel, CameraDriverLabel);
 
         load_internal_asset!(
             app,
-            Uuid::new_v4(),
+            FLUID_UNIFORM_SHADER_HANDLE,
             "../assets/shaders/fluid_uniform.wgsl",
             Shader::from_wgsl
         );
@@ -161,7 +162,7 @@ fn setup(
     let mesh = meshes.add(Mesh::from(Plane3d::default()));
 
     let material = materials.add(FluidMaterial {
-        base_color: Color::RED,
+        base_color: LinearRgba::RED,
         velocity_texture: Some(p0.clone()),
     });
 

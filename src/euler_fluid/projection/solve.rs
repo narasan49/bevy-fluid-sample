@@ -12,7 +12,7 @@ use bevy::{
             PipelineCache, ShaderStages,
         },
         renderer::RenderDevice,
-        texture::{FallbackImage, Image},
+        texture::{FallbackImage, GpuImage, Image},
     },
 };
 
@@ -77,7 +77,7 @@ impl FromWorld for SolvePressurePipeline {
 pub fn prepare_bind_group(
     mut commands: Commands,
     render_device: Res<RenderDevice>,
-    gpu_images: Res<RenderAssets<Image>>,
+    gpu_images: Res<RenderAssets<GpuImage>>,
     pipeline: Res<SolvePressurePipeline>,
     material: Res<SolvePressureMaterial>,
     fallback_image: Res<FallbackImage>,

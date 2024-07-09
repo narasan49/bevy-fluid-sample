@@ -11,7 +11,7 @@ use bevy::{
             ComputePipelineDescriptor, PipelineCache,
         },
         renderer::RenderDevice,
-        texture::{FallbackImage, Image},
+        texture::{FallbackImage, GpuImage, Image},
     },
 };
 
@@ -68,7 +68,7 @@ impl FromWorld for DivergencePipeline {
 pub fn prepare_bind_group(
     mut commands: Commands,
     render_device: Res<RenderDevice>,
-    gpu_images: Res<RenderAssets<Image>>,
+    gpu_images: Res<RenderAssets<GpuImage>>,
     pipeline: Res<DivergencePipeline>,
     material: Res<DivergenceMaterial>,
     fallback_image: Res<FallbackImage>,

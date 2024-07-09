@@ -12,7 +12,7 @@ use bevy::{
             PipelineCache, ShaderStages,
         },
         renderer::RenderDevice,
-        texture::{FallbackImage, Image},
+        texture::{FallbackImage, GpuImage, Image},
     },
 };
 
@@ -90,7 +90,7 @@ impl FromWorld for JacobiPipeline {
 pub fn prepare_bind_group(
     mut commands: Commands,
     render_device: Res<RenderDevice>,
-    gpu_images: Res<RenderAssets<Image>>,
+    gpu_images: Res<RenderAssets<GpuImage>>,
     pipeline: Res<JacobiPipeline>,
     material: Res<JacobiMaterial>,
     fallback_image: Res<FallbackImage>,

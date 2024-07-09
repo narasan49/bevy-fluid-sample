@@ -11,7 +11,7 @@ use bevy::{
     },
 };
 use euler_fluid::{advection::AdvectionMaterial, fluid_material::FluidMaterial, FluidPlugin};
-use iyes_perf_ui::{PerfUiCompleteBundle, PerfUiPlugin};
+use iyes_perf_ui::{entries::PerfUiCompleteBundle, PerfUiPlugin};
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 720.0;
@@ -88,9 +88,9 @@ fn on_advection_initialized(
         if advection.is_changed() {
             // spwan plane to visualize advection
             let mesh =
-                meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(2.0, 0.0, 0.0)));
+                meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(-2.0, 0.0, 0.0)));
             let material = materials.add(FluidMaterial {
-                base_color: Color::RED,
+                base_color: LinearRgba::RED,
                 velocity_texture: Some(advection.u_in.clone()),
             });
             commands.spawn((

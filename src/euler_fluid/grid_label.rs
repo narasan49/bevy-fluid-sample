@@ -5,7 +5,7 @@ use bevy::{
         render_asset::RenderAssets,
         render_resource::{AsBindGroup, BindGroup, BindGroupLayout},
         renderer::RenderDevice,
-        texture::FallbackImage,
+        texture::{FallbackImage, GpuImage},
     },
 };
 
@@ -24,7 +24,7 @@ pub struct GridLabelBindGroupLayout(pub BindGroupLayout);
 
 pub fn prepare_bind_group(
     mut commands: Commands,
-    gpu_images: Res<RenderAssets<Image>>,
+    gpu_images: Res<RenderAssets<GpuImage>>,
     material: Res<GridLabelMaterial>,
     render_device: Res<RenderDevice>,
     fallback_image: Res<FallbackImage>,

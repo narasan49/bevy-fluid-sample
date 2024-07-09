@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.13.2"
+bevy = {version = "0.14.0"}
 bytemuck = "1.15.0"
-iyes_perf_ui = "0.2.3"
+iyes_perf_ui = "0.3.0"
 

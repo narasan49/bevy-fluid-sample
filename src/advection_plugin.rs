@@ -41,7 +41,7 @@ impl Plugin for AdvectionPlugin {
             euler_fluid::advection::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
         );
 
-        let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
+        let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
         render_graph.add_node(AdvectionLabel, AdvectionNode::default());
         render_graph.add_node_edge(AdvectionLabel, CameraDriverLabel);
     }
