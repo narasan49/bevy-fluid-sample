@@ -17,8 +17,8 @@ const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 720.0;
 
 fn main() {
-    App::new()
-        .add_plugins(
+    let mut app = App::new();
+    app.add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
@@ -31,22 +31,26 @@ fn main() {
                 .set(RenderPlugin {
                     render_creation: bevy::render::settings::RenderCreation::Automatic(
                         WgpuSettings {
-                            backends: Some(Backends::DX12),
+                            backends: Some(Backends::PRIMARY),
                             ..default()
                         },
                     ),
                     ..default()
                 }),
         )
-        .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
-        .add_plugins(bevy::diagnostic::EntityCountDiagnosticsPlugin)
-        .add_plugins(bevy::diagnostic::SystemInformationDiagnosticsPlugin)
-        .add_plugins(PerfUiPlugin)
         .add_plugins(FluidPlugin)
         // .add_plugins(AdvectionPlugin)
         .add_systems(Startup, setup_scene)
-        .add_systems(Update, on_advection_initialized)
-        .run();
+        .add_systems(Update, on_advection_initialized);
+
+    if cfg!(target_os = "windows") {
+        app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
+            .add_plugins(bevy::diagnostic::EntityCountDiagnosticsPlugin)
+            .add_plugins(bevy::diagnostic::SystemInformationDiagnosticsPlugin)
+            .add_plugins(PerfUiPlugin);
+    }
+    
+    app.run();
 }
 
 #[derive(Component)]
@@ -75,7 +79,9 @@ fn setup_scene(mut commands: Commands) {
         })
         .insert(Name::new("Light"));
 
-    commands.spawn(PerfUiCompleteBundle::default());
+    if cfg!(target_os = "windows") {
+        commands.spawn(PerfUiCompleteBundle::default());
+    }
 }
 
 fn on_advection_initialized(
