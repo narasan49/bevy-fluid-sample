@@ -61,7 +61,11 @@ impl FromWorld for SolvePressurePipeline {
 
         let pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: Some(Cow::from("Solve Pressure")),
-            layout: vec![bind_group_layout.clone(), uniform_bind_group_layout.clone(), grid_label_bind_group_layout.clone()],
+            layout: vec![
+                bind_group_layout.clone(),
+                uniform_bind_group_layout.clone(),
+                grid_label_bind_group_layout.clone(),
+            ],
             push_constant_ranges: vec![],
             shader,
             shader_defs: vec![],

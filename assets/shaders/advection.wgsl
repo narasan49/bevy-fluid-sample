@@ -22,10 +22,6 @@ fn initialize(
     textureStore(u_out, x_u, vec4<f32>(speed, 0.0, 0.0, 0.0));
     textureStore(v_in, x_v, vec4<f32>(speed, 0.0, 0.0, 0.0));
     textureStore(v_out, x_v, vec4<f32>(speed, 0.0, 0.0, 0.0));
-
-    // Initialize grid_label
-    let circle = u32(step(length(vec2<f32>(f32(invocation_id.x) - 128.0, f32(invocation_id.y) - 128.0)), 50.0) + 1);
-    textureStore(grid_label, x_u, vec4<u32>(circle, 0, 0, 0));
 }
 
 @compute @workgroup_size(1, 64, 1)

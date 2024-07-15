@@ -19,29 +19,27 @@ const HEIGHT: f32 = 720.0;
 fn main() {
     let mut app = App::new();
     app.add_plugins(
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        resolution: (WIDTH, HEIGHT).into(),
-                        title: "bevy fluid".to_string(),
-                        ..default()
-                    }),
-                    ..default()
-                })
-                .set(RenderPlugin {
-                    render_creation: bevy::render::settings::RenderCreation::Automatic(
-                        WgpuSettings {
-                            backends: Some(Backends::PRIMARY),
-                            ..default()
-                        },
-                    ),
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: (WIDTH, HEIGHT).into(),
+                    title: "bevy fluid".to_string(),
                     ..default()
                 }),
-        )
-        .add_plugins(FluidPlugin)
-        // .add_plugins(AdvectionPlugin)
-        .add_systems(Startup, setup_scene)
-        .add_systems(Update, on_advection_initialized);
+                ..default()
+            })
+            .set(RenderPlugin {
+                render_creation: bevy::render::settings::RenderCreation::Automatic(WgpuSettings {
+                    backends: Some(Backends::DX12 | Backends::BROWSER_WEBGPU),
+                    ..default()
+                }),
+                ..default()
+            }),
+    )
+    .add_plugins(FluidPlugin)
+    // .add_plugins(AdvectionPlugin)
+    .add_systems(Startup, setup_scene)
+    .add_systems(Update, on_advection_initialized);
 
     if cfg!(target_os = "windows") {
         app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
@@ -49,7 +47,7 @@ fn main() {
             .add_plugins(bevy::diagnostic::SystemInformationDiagnosticsPlugin)
             .add_plugins(PerfUiPlugin);
     }
-    
+
     app.run();
 }
 

@@ -1,5 +1,6 @@
 pub mod advection;
 pub mod fluid_material;
+pub mod geometry;
 pub mod grid_label;
 pub mod projection;
 pub mod uniform;
@@ -18,7 +19,8 @@ use bevy::{
         Render, RenderApp, RenderSet,
     },
 };
-use grid_label::{GridLabelBindGroup, GridLabelMaterial};
+use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUniform};
+use grid_label::{GridLabelBindGroup, GridLabelMaterial, GridLabelPipeline};
 use projection::{
     divergence::{self, DivergenceBindGroup, DivergenceMaterial, DivergencePipeline},
     jacobi_iteration::{self, JacobiBindGroup, JacobiMaterial, JacobiPipeline},
@@ -26,7 +28,7 @@ use projection::{
 };
 use uniform::{SimulationUniform, SimulationUniformBindGroup};
 
-use crate::texture::ImageForCS;
+use crate::texture::NewTexture;
 
 use self::fluid_material::FluidMaterial;
 
@@ -35,7 +37,8 @@ const SIZE_U: (u32, u32) = (SIZE.0 + 1, SIZE.1);
 const SIZE_V: (u32, u32) = (SIZE.0, SIZE.1 + 1);
 const WORKGROUP_SIZE: u32 = 8;
 
-const FLUID_UNIFORM_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(0x8B9323522322463BA8CF530771C532EF);
+const FLUID_UNIFORM_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x8B9323522322463BA8CF530771C532EF);
 
 pub struct FluidPlugin;
 
@@ -48,6 +51,7 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractResourcePlugin::<SolvePressureMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<JacobiMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<GridLabelMaterial>::default())
+            .add_plugins(ExtractResourcePlugin::<CircleCollectionMaterial>::default())
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())
@@ -79,6 +83,10 @@ impl Plugin for FluidPlugin {
             .add_systems(
                 Render,
                 grid_label::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                geometry::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
             );
 
         let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
@@ -100,6 +108,7 @@ impl Plugin for FluidPlugin {
         render_app.init_resource::<SolvePressurePipeline>();
         render_app.init_resource::<DivergencePipeline>();
         render_app.init_resource::<JacobiPipeline>();
+        render_app.init_resource::<GridLabelPipeline>();
     }
 }
 
@@ -135,29 +144,20 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<FluidMaterial>>,
 ) {
-    let u0 = Image::new_texture_storage(SIZE_U, TextureFormat::R32Float);
-    let u0 = images.add(u0);
+    let u0 = images.new_texture_storage(SIZE_U, TextureFormat::R32Float);
+    let u1 = images.new_texture_storage(SIZE_U, TextureFormat::R32Float);
 
-    let u1 = Image::new_texture_storage(SIZE_U, TextureFormat::R32Float);
-    let u1 = images.add(u1);
+    let v0 = images.new_texture_storage(SIZE_V, TextureFormat::R32Float);
+    let v1 = images.new_texture_storage(SIZE_V, TextureFormat::R32Float);
 
-    let v0 = Image::new_texture_storage(SIZE_V, TextureFormat::R32Float);
-    let v0 = images.add(v0);
+    let div = images.new_texture_storage(SIZE, TextureFormat::R32Float);
 
-    let v1 = Image::new_texture_storage(SIZE_V, TextureFormat::R32Float);
-    let v1 = images.add(v1);
+    let p0 = images.new_texture_storage(SIZE, TextureFormat::R32Float);
+    let p1 = images.new_texture_storage(SIZE, TextureFormat::R32Float);
 
-    let div = Image::new_texture_storage(SIZE, TextureFormat::R32Float);
-    let div = images.add(div);
-
-    let p0 = Image::new_texture_storage(SIZE, TextureFormat::R32Float);
-    let p0 = images.add(p0);
-
-    let p1 = Image::new_texture_storage(SIZE, TextureFormat::R32Float);
-    let p1 = images.add(p1);
-
-    let grid_label = Image::new_texture_storage(SIZE, TextureFormat::R32Uint);
-    let grid_label = images.add(grid_label);
+    let grid_label = images.new_texture_storage(SIZE, TextureFormat::R32Uint);
+    let u_solid = images.new_texture_storage(SIZE_U, TextureFormat::R32Float);
+    let v_solid = images.new_texture_storage(SIZE_V, TextureFormat::R32Float);
 
     let mesh = meshes.add(Mesh::from(Plane3d::default()));
 
@@ -199,7 +199,17 @@ fn setup(
         v_out: v0,
         p: p0,
     });
-    commands.insert_resource(GridLabelMaterial { grid_label });
+    commands.insert_resource(GridLabelMaterial {
+        grid_label,
+        u_solid,
+        v_solid,
+    });
+    commands.insert_resource(CircleCollectionMaterial {
+        circles: vec![CrircleUniform {
+            r: 50.0,
+            position: Vec2::from_array([128.0, 128.0]),
+        }],
+    });
 
     commands.spawn(SimulationUniform {
         dx: 1.0f32,
@@ -242,14 +252,20 @@ impl render_graph::Node for FluidNode {
         let divergence_pipeline = world.resource::<DivergencePipeline>();
         let jacobi_pipeline = world.resource::<JacobiPipeline>();
         let solve_pipeline = world.resource::<SolvePressurePipeline>();
+        let grid_label_pipeline = world.resource::<GridLabelPipeline>();
         let pipeline_cache = world.resource::<PipelineCache>();
 
         match self.state {
             FluidState::Loading => {
-                if let CachedPipelineState::Ok(_) =
-                    pipeline_cache.get_compute_pipeline_state(advection_pipeline.init_pipeline)
-                {
-                    self.state = FluidState::Init;
+                let advection_pipeline =
+                    pipeline_cache.get_compute_pipeline_state(advection_pipeline.init_pipeline);
+                let grid_label_pipeline =
+                    pipeline_cache.get_compute_pipeline_state(grid_label_pipeline.init_pipeline);
+                match (advection_pipeline, grid_label_pipeline) {
+                    (CachedPipelineState::Ok(_), CachedPipelineState::Ok(_)) => {
+                        self.state = FluidState::Init;
+                    }
+                    _ => {}
                 }
             }
             FluidState::Init => {
@@ -261,13 +277,17 @@ impl render_graph::Node for FluidNode {
                     pipeline_cache.get_compute_pipeline_state(solve_pipeline.pipeline);
                 let divergence_pipeline =
                     pipeline_cache.get_compute_pipeline_state(divergence_pipeline.pipeline);
+                let grid_label_pipeline =
+                    pipeline_cache.get_compute_pipeline_state(grid_label_pipeline.update_pipeline);
                 match (
                     advection_pipeline,
                     jacobi_pipeline,
                     solve_pipeline,
                     divergence_pipeline,
+                    grid_label_pipeline,
                 ) {
                     (
+                        CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
@@ -287,6 +307,7 @@ impl render_graph::Node for FluidNode {
         world: &'w World,
     ) -> Result<(), render_graph::NodeRunError> {
         let advection_pipeline = world.resource::<AdvectionPipeline>();
+        let grid_label_pipeline = world.resource::<GridLabelPipeline>();
         let pipeline_cache = world.resource::<PipelineCache>();
 
         let uniform_bind_group = &world.resource::<SimulationUniformBindGroup>().0;
@@ -297,23 +318,40 @@ impl render_graph::Node for FluidNode {
         match self.state {
             FluidState::Loading => {}
             FluidState::Init => {
+                let grid_label_pipeline = pipeline_cache
+                    .get_compute_pipeline(grid_label_pipeline.init_pipeline)
+                    .unwrap();
+                let grid_label_bind_group = &world.resource::<GridLabelBindGroup>().0;
+                pass.set_pipeline(&grid_label_pipeline);
+                pass.set_bind_group(0, grid_label_bind_group, &[]);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+
                 let init_pipeline = pipeline_cache
                     .get_compute_pipeline(advection_pipeline.init_pipeline)
                     .unwrap();
                 let advection_bind_group = &world.resource::<AdvectionBindGroup>().0;
-                let grid_label_bind_group = &world.resource::<GridLabelBindGroup>().0;
                 pass.set_pipeline(init_pipeline);
                 pass.set_bind_group(0, advection_bind_group, &[]);
                 pass.set_bind_group(1, uniform_bind_group, &[]);
                 pass.set_bind_group(2, grid_label_bind_group, &[]);
-                pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
             }
             FluidState::Update => {
+                let grid_label_pipeline = pipeline_cache
+                    .get_compute_pipeline(grid_label_pipeline.update_pipeline)
+                    .unwrap();
+                let circle_collection_bind_group = &world.resource::<CircleCollectionBindGroup>().0;
+                let grid_label_bind_group = &world.resource::<GridLabelBindGroup>().0;
+
+                pass.set_pipeline(grid_label_pipeline);
+                pass.set_bind_group(0, grid_label_bind_group, &[]);
+                pass.set_bind_group(1, circle_collection_bind_group, &[]);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+
                 let advection_pipeline = pipeline_cache
                     .get_compute_pipeline(advection_pipeline.pipeline)
                     .unwrap();
                 let advection_bind_group = &world.resource::<AdvectionBindGroup>().0;
-                let grid_label_bind_group = &world.resource::<GridLabelBindGroup>().0;
                 pass.set_pipeline(advection_pipeline);
                 pass.set_bind_group(0, advection_bind_group, &[]);
                 pass.set_bind_group(1, uniform_bind_group, &[]);

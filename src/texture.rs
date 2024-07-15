@@ -1,7 +1,10 @@
-use bevy::render::{
-    render_asset::RenderAssetUsages,
-    render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
-    texture::{Image, TextureFormatPixelInfo},
+use bevy::{
+    prelude::*,
+    render::{
+        render_asset::RenderAssetUsages,
+        render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
+        texture::{Image, TextureFormatPixelInfo},
+    },
 };
 
 pub trait ImageForCS {
@@ -30,5 +33,16 @@ impl ImageForCS for Image {
             | TextureUsages::STORAGE_BINDING
             | TextureUsages::TEXTURE_BINDING;
         image
+    }
+}
+
+pub trait NewTexture {
+    fn new_texture_storage(&mut self, size: (u32, u32), format: TextureFormat) -> Handle<Image>;
+}
+
+impl<'a> NewTexture for ResMut<'a, Assets<Image>> {
+    fn new_texture_storage(&mut self, size: (u32, u32), format: TextureFormat) -> Handle<Image> {
+        let u0 = Image::new_texture_storage(size, format);
+        self.add(u0)
     }
 }
