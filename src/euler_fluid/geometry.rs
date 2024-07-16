@@ -13,6 +13,7 @@ use bevy::{
 pub struct CrircleUniform {
     pub r: f32,
     pub position: Vec2,
+    pub velocity: Vec2,
 }
 
 #[derive(Resource, AsBindGroup, ExtractResource, Clone)]

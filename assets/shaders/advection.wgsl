@@ -8,6 +8,8 @@
 @group(1) @binding(0) var<uniform> constants: SimulationUniform;
 
 @group(2) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
+@group(2) @binding(1) var u_solid: texture_storage_2d<r32float, read_write>;
+@group(2) @binding(2) var v_solid: texture_storage_2d<r32float, read_write>;
 
 // ToDo: Move to a separate file
 @compute @workgroup_size(1, 64, 1)
@@ -34,7 +36,7 @@ fn advection(
     let label_u = textureLoad(grid_label, x_u - vec2<i32>(0, 1)).r;
     let label_uplus = textureLoad(grid_label, x_u).r;
     if (label_u == 2 || label_uplus == 2) {
-        let u_solid = 0.0;
+        let u_solid = textureLoad(u_solid, x_u).r;
         textureStore(u_out, x_u, vec4<f32>(u_solid, 0.0, 0.0, 0.0));
     } else if (label_u == 0 || label_uplus == 0) {
         textureStore(u_out, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -47,7 +49,7 @@ fn advection(
     let label_v = textureLoad(grid_label, x_v - vec2<i32>(0, 1)).r;
     let label_vplus = textureLoad(grid_label, x_v).r;
     if (label_v == 2 || label_vplus == 2) {
-        let v_solid = 0.0;
+        let v_solid = textureLoad(v_solid, x_v).r;
         textureStore(v_out, x_v, vec4<f32>(v_solid, 0.0, 0.0, 0.0));
     } else if (label_v == 0 || label_vplus == 0) {
         textureStore(v_out, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));

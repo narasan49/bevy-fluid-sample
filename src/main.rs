@@ -4,13 +4,12 @@ mod texture;
 
 // use advection_plugin::AdvectionPlugin;
 use bevy::{
-    prelude::*,
-    render::{
+    math::vec2, prelude::*, render::{
         settings::{Backends, WgpuSettings},
         RenderPlugin,
-    },
+    }
 };
-use euler_fluid::{advection::AdvectionMaterial, fluid_material::FluidMaterial, FluidPlugin};
+use euler_fluid::{advection::AdvectionMaterial, fluid_material::FluidMaterial, geometry::{CircleCollectionMaterial, CrircleUniform}, FluidPlugin};
 use iyes_perf_ui::{entries::PerfUiCompleteBundle, PerfUiPlugin};
 
 const WIDTH: f32 = 1280.0;
@@ -39,7 +38,7 @@ fn main() {
     .add_plugins(FluidPlugin)
     // .add_plugins(AdvectionPlugin)
     .add_systems(Startup, setup_scene)
-    .add_systems(Update, on_advection_initialized);
+    .add_systems(Update, (on_advection_initialized, update_geometry));
 
     if cfg!(target_os = "windows") {
         app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
@@ -107,4 +106,19 @@ fn on_advection_initialized(
             ));
         }
     }
+}
+
+fn update_geometry(
+    mut geometry_collection: ResMut<CircleCollectionMaterial>,
+    time: Res<Time>,
+) {
+    geometry_collection.circles = geometry_collection.circles.iter().map(|circle| {
+        let x = circle.position.x;
+        let new_x = 128.0 + 100.0 * f32::sin(time.elapsed_seconds() * 0.1);
+        return CrircleUniform {
+            position: vec2(new_x, circle.position.y),
+            velocity: vec2((new_x - x) / time.delta_seconds(), 0.0),
+            ..*circle
+        }
+    }).collect();
 }

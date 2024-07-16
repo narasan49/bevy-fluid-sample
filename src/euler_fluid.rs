@@ -156,8 +156,8 @@ fn setup(
     let p1 = images.new_texture_storage(SIZE, TextureFormat::R32Float);
 
     let grid_label = images.new_texture_storage(SIZE, TextureFormat::R32Uint);
-    let u_solid = images.new_texture_storage(SIZE_U, TextureFormat::R32Float);
-    let v_solid = images.new_texture_storage(SIZE_V, TextureFormat::R32Float);
+    let u_solid = images.new_texture_storage(SIZE, TextureFormat::R32Float);
+    let v_solid = images.new_texture_storage(SIZE, TextureFormat::R32Float);
 
     let mesh = meshes.add(Mesh::from(Plane3d::default()));
 
@@ -208,6 +208,7 @@ fn setup(
         circles: vec![CrircleUniform {
             r: 50.0,
             position: Vec2::from_array([128.0, 128.0]),
+            velocity: Vec2::ZERO,
         }],
     });
 
