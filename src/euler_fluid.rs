@@ -156,8 +156,8 @@ fn setup(
     let p1 = images.new_texture_storage(SIZE, TextureFormat::R32Float);
 
     let grid_label = images.new_texture_storage(SIZE, TextureFormat::R32Uint);
-    let u_solid = images.new_texture_storage(SIZE_U, TextureFormat::R32Float);
-    let v_solid = images.new_texture_storage(SIZE_V, TextureFormat::R32Float);
+    let u_solid = images.new_texture_storage(SIZE, TextureFormat::R32Float);
+    let v_solid = images.new_texture_storage(SIZE, TextureFormat::R32Float);
 
     let mesh = meshes.add(Mesh::from(Plane3d::default()));
 
@@ -208,6 +208,7 @@ fn setup(
         circles: vec![CrircleUniform {
             r: 50.0,
             position: Vec2::from_array([128.0, 128.0]),
+            velocity: Vec2::ZERO,
         }],
     });
 
@@ -334,7 +335,7 @@ impl render_graph::Node for FluidNode {
                 pass.set_bind_group(0, advection_bind_group, &[]);
                 pass.set_bind_group(1, uniform_bind_group, &[]);
                 pass.set_bind_group(2, grid_label_bind_group, &[]);
-                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+                pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
             }
             FluidState::Update => {
                 let grid_label_pipeline = pipeline_cache
