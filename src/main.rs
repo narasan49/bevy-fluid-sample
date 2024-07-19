@@ -114,7 +114,7 @@ fn update_geometry(
 ) {
     geometry_collection.circles = geometry_collection.circles.iter().map(|circle| {
         let x = circle.position.x;
-        let new_x = 128.0 + 100.0 * f32::sin(time.elapsed_seconds() * 0.1);
+        let new_x = 128.0 + 100.0 * f32::sin(time.elapsed_seconds());
         return CrircleUniform {
             position: vec2(new_x, circle.position.y),
             velocity: vec2((new_x - x) / time.delta_seconds(), 0.0),

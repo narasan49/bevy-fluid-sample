@@ -18,8 +18,8 @@ fn initialize(
 ) {
     let x_u = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
     let x_v = vec2<i32>(x_u.y, x_u.x);
-    let speed = 10.0 * gausian_2d(256.0 - f32(invocation_id.x), 256.0 - f32(invocation_id.y), 100.0);
-
+    // let speed = 10.0 * gausian_2d(256.0 - f32(invocation_id.x), 256.0 - f32(invocation_id.y), 100.0);
+    let speed = 0.0;
     textureStore(u_in, x_u, vec4<f32>(speed, 0.0, 0.0, 0.0));
     textureStore(u_out, x_u, vec4<f32>(speed, 0.0, 0.0, 0.0));
     textureStore(v_in, x_v, vec4<f32>(speed, 0.0, 0.0, 0.0));
@@ -35,10 +35,8 @@ fn advection(
 
     let label_u = textureLoad(grid_label, x_u - vec2<i32>(0, 1)).r;
     let label_uplus = textureLoad(grid_label, x_u).r;
-    if (label_u == 2 || label_uplus == 2) {
-        let u_solid = textureLoad(u_solid, x_u).r;
-        textureStore(u_out, x_u, vec4<f32>(u_solid, 0.0, 0.0, 0.0));
-    } else if (label_u == 0 || label_uplus == 0) {
+    // At this point, we don't update the solid velocity. Solid velocity is taken into account in the divergence and pressure-update steps.
+    if (label_u == 0 || label_uplus == 0) {
         textureStore(u_out, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
     } else {
         let backtraced_x_u: vec2<f32> = runge_kutta(u_in, v_in, x_u, constants.dt);
@@ -48,10 +46,7 @@ fn advection(
 
     let label_v = textureLoad(grid_label, x_v - vec2<i32>(0, 1)).r;
     let label_vplus = textureLoad(grid_label, x_v).r;
-    if (label_v == 2 || label_vplus == 2) {
-        let v_solid = textureLoad(v_solid, x_v).r;
-        textureStore(v_out, x_v, vec4<f32>(v_solid, 0.0, 0.0, 0.0));
-    } else if (label_v == 0 || label_vplus == 0) {
+    if (label_v == 0 || label_vplus == 0) {
         textureStore(v_out, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));
     } else {
         let backtraced_x_v: vec2<f32> = runge_kutta(u_in, v_in, x_v, constants.dt);

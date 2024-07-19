@@ -335,7 +335,7 @@ impl render_graph::Node for FluidNode {
                 pass.set_bind_group(0, advection_bind_group, &[]);
                 pass.set_bind_group(1, uniform_bind_group, &[]);
                 pass.set_bind_group(2, grid_label_bind_group, &[]);
-                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+                pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
             }
             FluidState::Update => {
                 let grid_label_pipeline = pipeline_cache
