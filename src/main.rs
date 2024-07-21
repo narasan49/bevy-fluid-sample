@@ -5,6 +5,7 @@ mod ui;
 
 // use advection_plugin::AdvectionPlugin;
 use bevy::{
+    core::FrameCount,
     math::vec2,
     prelude::*,
     render::{
@@ -16,6 +17,7 @@ use euler_fluid::{
     advection::AdvectionMaterial,
     fluid_material::FluidMaterial,
     geometry::{CircleCollectionMaterial, CrircleUniform},
+    uniform::SimulationUniform,
     FluidPlugin,
 };
 use iyes_perf_ui::{entries::PerfUiCompleteBundle, PerfUiPlugin};
@@ -119,16 +121,22 @@ fn on_advection_initialized(
     }
 }
 
-fn update_geometry(mut geometry_collection: ResMut<CircleCollectionMaterial>, time: Res<Time>) {
+// ToDo: Support for variable FPS
+fn update_geometry(
+    mut geometry_collection: ResMut<CircleCollectionMaterial>,
+    frame: Res<FrameCount>,
+    query: Query<&SimulationUniform>,
+) {
+    let simuletion_uniform = query.single();
     geometry_collection.circles = geometry_collection
         .circles
         .iter()
         .map(|circle| {
             let x = circle.position.x;
-            let new_x = 128.0 + 100.0 * f32::sin(time.elapsed_seconds());
+            let new_x = 128.0 + 100.0 * f32::sin(frame.0 as f32 * 0.01);
             return CrircleUniform {
                 position: vec2(new_x, circle.position.y),
-                velocity: vec2((new_x - x) / time.delta_seconds(), 0.0),
+                velocity: vec2((new_x - x) / simuletion_uniform.dt, 0.0),
                 ..*circle
             };
         })
