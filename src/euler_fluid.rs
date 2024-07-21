@@ -205,11 +205,7 @@ fn setup(
         v_solid,
     });
     commands.insert_resource(CircleCollectionMaterial {
-        circles: vec![CrircleUniform {
-            r: 50.0,
-            position: Vec2::from_array([128.0, 128.0]),
-            velocity: Vec2::ZERO,
-        }],
+        circles: vec![],
     });
 
     commands.spawn(SimulationUniform {
