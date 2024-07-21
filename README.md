@@ -2,8 +2,12 @@
 
 This project is a fluid simulation sample built using the Bevy engine.
 
+Try it on [here](https://narasan49.github.io/bevy-fluid-sample/)!
+
 ## Features
-Currently, this project provides invicid, incompressible 2D fluid simulation with free boundary condition (pressure equals to zero at the boundary) only.
+- [x] Invicid, incompressible 2D fluid simulation
+- [x] Free boundary condition at the boundary of calculation domain
+- [x] One-way solid body to fluid interaction
 
 ## Getting Started
 

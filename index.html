@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+
+<body style="margin: 0px;">
+  <script type="module">
+    import init from './out/bevy-fluid-sample.js'
+
+    init().catch((error) => {
+      if (!error.message.startsWith("Using exceptions for control flow, don't mind me. This isn't actually an error!")) {
+        throw error;
+      }
+    });
+  </script>
+  <div style="position: fixed; bottom: 0; right: 0; background-color: #f8f9fa; padding: 10px; font-size: 12px;">
+    <a href="https://github.com/narasan49/bevy-fluid-sample" target="_blank">View source on GitHub</a>
+  </div>
+</body>
+
+</html>

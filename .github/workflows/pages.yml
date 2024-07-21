@@ -1,0 +1,25 @@
+name: github pages
+on:
+  push:
+    branches:
+      - master
+jobs:
+    deploy-pages:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: dtolnay/rust-toolchain@stable
+        - name: install tools
+          run: |
+            cargo install wasm-bindgen-cli
+        - name: build
+          run: |
+            cargo build --release --target wasm32-unknown-unknown
+            wasm-bindgen --target web --out-dir ./out/ --out-name bevy-fluid-sample .\target\wasm32-unknown-unknown\release\bevy-fluid.wasm
+        - name: deploy
+          run: |
+            git config --global user.name github-actions[bot]
+            git config --global user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git add .
+            git commit -m "deploy pages. Run ID: ${{ github.run_id }}"
+            git push -u origin pages --force
