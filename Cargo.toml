@@ -9,4 +9,5 @@ edition = "2021"
 bevy = {version = "0.14.0", features = ["webgpu"]}
 bytemuck = "1.15.0"
 iyes_perf_ui = "0.3.0"
+rand = "0.8.5"
 

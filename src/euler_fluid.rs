@@ -204,13 +204,7 @@ fn setup(
         u_solid,
         v_solid,
     });
-    commands.insert_resource(CircleCollectionMaterial {
-        circles: vec![CrircleUniform {
-            r: 50.0,
-            position: Vec2::from_array([128.0, 128.0]),
-            velocity: Vec2::ZERO,
-        }],
-    });
+    commands.insert_resource(CircleCollectionMaterial { circles: vec![] });
 
     commands.spawn(SimulationUniform {
         dx: 1.0f32,
@@ -272,8 +266,10 @@ impl render_graph::Node for FluidNode {
             FluidState::Init => {
                 let advection_pipeline =
                     pipeline_cache.get_compute_pipeline_state(advection_pipeline.pipeline);
-                let jacobi_pipeline =
+                let jacobi_pipeline_state =
                     pipeline_cache.get_compute_pipeline_state(jacobi_pipeline.pipeline);
+                let jacobi_swap_pipeline =
+                    pipeline_cache.get_compute_pipeline_state(jacobi_pipeline.swap_pipeline);
                 let solve_pipeline =
                     pipeline_cache.get_compute_pipeline_state(solve_pipeline.pipeline);
                 let divergence_pipeline =
@@ -282,12 +278,14 @@ impl render_graph::Node for FluidNode {
                     pipeline_cache.get_compute_pipeline_state(grid_label_pipeline.update_pipeline);
                 match (
                     advection_pipeline,
-                    jacobi_pipeline,
+                    jacobi_pipeline_state,
+                    jacobi_swap_pipeline,
                     solve_pipeline,
                     divergence_pipeline,
                     grid_label_pipeline,
                 ) {
                     (
+                        CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),

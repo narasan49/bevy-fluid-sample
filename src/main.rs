@@ -1,16 +1,28 @@
 mod advection_plugin;
 mod euler_fluid;
 mod texture;
+mod ui;
 
 // use advection_plugin::AdvectionPlugin;
 use bevy::{
-    math::vec2, prelude::*, render::{
+    core::FrameCount,
+    math::vec2,
+    prelude::*,
+    render::{
         settings::{Backends, WgpuSettings},
         RenderPlugin,
-    }
+    },
 };
-use euler_fluid::{advection::AdvectionMaterial, fluid_material::FluidMaterial, geometry::{CircleCollectionMaterial, CrircleUniform}, FluidPlugin};
+use euler_fluid::{
+    advection::AdvectionMaterial,
+    fluid_material::FluidMaterial,
+    geometry::{CircleCollectionMaterial, CrircleUniform},
+    uniform::SimulationUniform,
+    FluidPlugin,
+};
 use iyes_perf_ui::{entries::PerfUiCompleteBundle, PerfUiPlugin};
+use rand::Rng;
+use ui::{AddButton, GameUiPlugin, ResetButton};
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 720.0;
@@ -36,9 +48,10 @@ fn main() {
             }),
     )
     .add_plugins(FluidPlugin)
-    // .add_plugins(AdvectionPlugin)
+    .add_plugins(GameUiPlugin)
     .add_systems(Startup, setup_scene)
-    .add_systems(Update, (on_advection_initialized, update_geometry));
+    .add_systems(Update, (on_advection_initialized, update_geometry))
+    .add_systems(Update, (button_update, add_object));
 
     if cfg!(target_os = "windows") {
         app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
@@ -108,17 +121,54 @@ fn on_advection_initialized(
     }
 }
 
+// ToDo: Support for variable FPS
 fn update_geometry(
     mut geometry_collection: ResMut<CircleCollectionMaterial>,
-    time: Res<Time>,
+    frame: Res<FrameCount>,
+    query: Query<&SimulationUniform>,
 ) {
-    geometry_collection.circles = geometry_collection.circles.iter().map(|circle| {
-        let x = circle.position.x;
-        let new_x = 128.0 + 100.0 * f32::sin(time.elapsed_seconds());
-        return CrircleUniform {
-            position: vec2(new_x, circle.position.y),
-            velocity: vec2((new_x - x) / time.delta_seconds(), 0.0),
-            ..*circle
+    let simuletion_uniform = query.single();
+    geometry_collection.circles = geometry_collection
+        .circles
+        .iter()
+        .map(|circle| {
+            let x = circle.position.x;
+            let new_x = 128.0 + 100.0 * f32::sin(frame.0 as f32 * 0.01);
+            return CrircleUniform {
+                position: vec2(new_x, circle.position.y),
+                velocity: vec2((new_x - x) / simuletion_uniform.dt, 0.0),
+                ..*circle
+            };
+        })
+        .collect();
+}
+
+fn button_update(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>, With<ResetButton>)>,
+    mut geometry_collection: ResMut<CircleCollectionMaterial>,
+) {
+    for interaction in &interaction_query {
+        if *interaction == Interaction::Pressed {
+            // initialize fluid simulation
+            // remove objcts
+            // set velocities, pressure to zero
+            geometry_collection.circles = vec![];
         }
-    }).collect();
+    }
+}
+
+fn add_object(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>, With<AddButton>)>,
+    mut geometry_collection: ResMut<CircleCollectionMaterial>,
+) {
+    for interaction in &interaction_query {
+        if *interaction == Interaction::Pressed {
+            let mut rng = rand::thread_rng();
+            geometry_collection.circles.push(CrircleUniform {
+                position: vec2(rng.gen_range(0..512) as f32, rng.gen_range(0..512) as f32),
+                r: rng.gen_range(10..50) as f32,
+                velocity: Vec2::ZERO,
+            });
+        }
+    }
 }
