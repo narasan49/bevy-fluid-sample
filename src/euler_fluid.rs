@@ -204,9 +204,7 @@ fn setup(
         u_solid,
         v_solid,
     });
-    commands.insert_resource(CircleCollectionMaterial {
-        circles: vec![],
-    });
+    commands.insert_resource(CircleCollectionMaterial { circles: vec![] });
 
     commands.spawn(SimulationUniform {
         dx: 1.0f32,
