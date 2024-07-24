@@ -8,7 +8,7 @@
 fn fragment(
     mesh: VertexOutput,
 ) -> @location(0) vec4<f32> {
-    var v = 0.01 * textureSample(velocity_texture, velocity_sampler, mesh.uv).r;
+    var v = 0.001 * textureSample(velocity_texture, velocity_sampler, mesh.uv).r;
     var positive = step(0.0, v);
     return vec4<f32>(positive * v , (1 - positive) * abs(v), 0.0, 1.0);
 }
