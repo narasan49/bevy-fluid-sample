@@ -6,7 +6,7 @@ mod ui;
 // use advection_plugin::AdvectionPlugin;
 use bevy::{
     core::FrameCount,
-    math::vec2,
+    math::vec3,
     prelude::*,
     render::{
         settings::{Backends, WgpuSettings},
@@ -16,7 +16,7 @@ use bevy::{
 use euler_fluid::{
     advection::AdvectionMaterial,
     fluid_material::FluidMaterial,
-    geometry::{CircleCollectionMaterial, CrircleUniform},
+    geometry::{self},
     uniform::SimulationUniform,
     FluidPlugin,
 };
@@ -123,52 +123,52 @@ fn on_advection_initialized(
 
 // ToDo: Support for variable FPS
 fn update_geometry(
-    mut geometry_collection: ResMut<CircleCollectionMaterial>,
     frame: Res<FrameCount>,
-    query: Query<&SimulationUniform>,
+    mut object_query: Query<(&geometry::Circle, &mut Transform, &mut geometry::Velocity)>,
+    uniform_query: Query<&SimulationUniform>,
 ) {
-    let simuletion_uniform = query.single();
-    geometry_collection.circles = geometry_collection
-        .circles
-        .iter()
-        .map(|circle| {
-            let x = circle.position.x;
-            let new_x = 128.0 + 100.0 * f32::sin(frame.0 as f32 * 0.01);
-            return CrircleUniform {
-                position: vec2(new_x, circle.position.y),
-                velocity: vec2((new_x - x) / simuletion_uniform.dt, 0.0),
-                ..*circle
-            };
-        })
-        .collect();
+    let dt = uniform_query.single().dt * 0.1;
+    let t = frame.0 as f32 * dt;
+    let freq = 1.0;
+    for (_circle, mut transform, mut velocity) in &mut object_query {
+        let u = 100.0 * freq * f32::cos(t * freq);
+        velocity.u = u;
+        transform.translation.x += u * dt;
+    }
 }
 
 fn button_update(
+    mut commands: Commands,
     interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>, With<ResetButton>)>,
-    mut geometry_collection: ResMut<CircleCollectionMaterial>,
+    object_query: Query<Entity, With<geometry::Circle>>,
 ) {
     for interaction in &interaction_query {
         if *interaction == Interaction::Pressed {
-            // initialize fluid simulation
-            // remove objcts
-            // set velocities, pressure to zero
-            geometry_collection.circles = vec![];
+            for entity in object_query.iter() {
+                commands.entity(entity).despawn();
+            }
         }
     }
 }
 
 fn add_object(
+    mut commands: Commands,
     interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>, With<AddButton>)>,
-    mut geometry_collection: ResMut<CircleCollectionMaterial>,
 ) {
     for interaction in &interaction_query {
         if *interaction == Interaction::Pressed {
             let mut rng = rand::thread_rng();
-            geometry_collection.circles.push(CrircleUniform {
-                position: vec2(rng.gen_range(0..512) as f32, rng.gen_range(0..512) as f32),
-                r: rng.gen_range(10..50) as f32,
-                velocity: Vec2::ZERO,
-            });
+            commands.spawn((
+                geometry::Circle {
+                    radius: rng.gen_range(10..50) as f32,
+                },
+                Transform::from_translation(vec3(
+                    rng.gen_range(0..512) as f32,
+                    0.0,
+                    rng.gen_range(0..512) as f32,
+                )),
+                geometry::Velocity { u: 0.0, v: 0.0 },
+            ));
         }
     }
 }
