@@ -51,11 +51,9 @@ fn is_solid(label: texture_storage_2d<r32uint, read_write>, x: vec2<i32>) -> f32
     } else {
         return 0.0;
     }
-    // return 1.0 - f32(abs(sign(textureLoad(label, x).r - 2)));
 }
 
 fn is_fluid(label: texture_storage_2d<r32uint, read_write>, x: vec2<i32>) -> f32 {
-    // return f32(abs(sign(i32(textureLoad(label, x).r) - 1)));
     if (textureLoad(label, x).r == 1) {
         return 1.0;
     } else {

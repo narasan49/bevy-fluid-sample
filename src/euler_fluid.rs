@@ -8,6 +8,7 @@ pub mod uniform;
 use advection::{AdvectionBindGroup, AdvectionMaterial, AdvectionPipeline};
 use bevy::{
     asset::load_internal_asset,
+    math::vec2,
     prelude::*,
     render::{
         extract_component::{ComponentUniforms, ExtractComponentPlugin, UniformComponentPlugin},
@@ -19,7 +20,7 @@ use bevy::{
         Render, RenderApp, RenderSet,
     },
 };
-use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUniform};
+use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUniform, Velocity};
 use grid_label::{GridLabelBindGroup, GridLabelMaterial, GridLabelPipeline};
 use projection::{
     divergence::{self, DivergenceBindGroup, DivergenceMaterial, DivergencePipeline},
@@ -56,7 +57,7 @@ impl Plugin for FluidPlugin {
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())
             .add_systems(Startup, setup)
-            .add_systems(Update, update);
+            .add_systems(Update, (update, update_geometry));
 
         let render_app = app.sub_app_mut(RenderApp);
         render_app
@@ -217,6 +218,24 @@ fn update(mut query: Query<&mut SimulationUniform>, _time: Res<Time>) {
     for mut uniform in &mut query {
         uniform.dt = 0.1;
     }
+}
+
+fn update_geometry(
+    query: Query<(&geometry::Circle, &Transform, &Velocity)>,
+    mut geometries: ResMut<CircleCollectionMaterial>,
+) {
+    let circles = query
+        .iter()
+        .map(|(circle, transform, velocity)| {
+            return CrircleUniform {
+                r: circle.radius,
+                position: transform.translation.xz(),
+                velocity: vec2(velocity.u, velocity.v),
+            };
+        })
+        .collect::<Vec<CrircleUniform>>();
+
+    geometries.circles = circles;
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]

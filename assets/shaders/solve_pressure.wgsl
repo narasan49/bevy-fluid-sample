@@ -17,13 +17,6 @@ fn solve_pressure(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
     let factor = constants.dt / (constants.dx * constants.rho);
 
     let x_u = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
-    let p1_u = textureLoad(pressure, x_u).r;
-    var p0_u = 0.0;
-    if x_u.x != 0 { 
-        p0_u = textureLoad(pressure, x_u - vec2<i32>(1, 0)).r;
-    }
-    let u = textureLoad(u_in, x_u);
-    let du = vec4<f32>(factor * (p1_u - p0_u), 0.0, 0.0, 0.0);
 
     let grid_label_u0 = textureLoad(grid_label, x_u - vec2<i32>(1, 0)).r;
     let grid_label_u1 = textureLoad(grid_label, x_u).r;
@@ -34,17 +27,17 @@ fn solve_pressure(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
         let u_solid = textureLoad(u_solid, x_u).r;
         textureStore(u_out, x_u, vec4<f32>(u_solid, 0.0, 0.0, 0.0));
     } else {
+        let p1_u = textureLoad(pressure, x_u).r;
+        var p0_u = 0.0;
+        if x_u.x != 0 {
+            p0_u = textureLoad(pressure, x_u - vec2<i32>(1, 0)).r;
+        }
+        let u = textureLoad(u_in, x_u);
+        let du = vec4<f32>(factor * (p1_u - p0_u), 0.0, 0.0, 0.0);
         textureStore(u_out, x_u, u - du);
     }
 
     let x_v = vec2<i32>(x_u.y, x_u.x);
-    let p1_v = textureLoad(pressure, x_v).r;
-    var p0_v = 0.0;
-    if x_v.y != 0 {
-        p0_v = textureLoad(pressure, x_v - vec2<i32>(0, 1)).r;
-    }
-    let v = textureLoad(v_in, x_v);
-    let dv = vec4<f32>(factor * (p1_v - p0_v), 0.0, 0.0, 0.0);
 
     let grid_label_v0 = textureLoad(grid_label, x_v - vec2<i32>(0, 1)).r;
     let grid_label_v1 = textureLoad(grid_label, x_v).r;
@@ -55,6 +48,13 @@ fn solve_pressure(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
         let v_solid = textureLoad(v_solid, x_v).r;
         textureStore(v_out, x_v, vec4<f32>(v_solid, 0.0, 0.0, 0.0));
     } else {
+        let p1_v = textureLoad(pressure, x_v).r;
+        var p0_v = 0.0;
+        if x_v.y != 0 {
+            p0_v = textureLoad(pressure, x_v - vec2<i32>(0, 1)).r;
+        }
+        let v = textureLoad(v_in, x_v);
+        let dv = vec4<f32>(factor * (p1_v - p0_v), 0.0, 0.0, 0.0);
         textureStore(v_out, x_v, v - dv);
     }
 }
