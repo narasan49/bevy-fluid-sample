@@ -4,7 +4,7 @@ This project is a fluid simulation sample built using the Bevy engine.
 
 Try it on [here](https://narasan49.github.io/bevy-fluid-sample/)!
 
-![img](./docs/screenshot.png)
+https://github.com/user-attachments/assets/2e7b5aba-e9ef-4fc7-9efa-7e71da4179f6
 
 Screenshot: (Left) x-ward velocity field, (Right) pressure field with moving solid obstacles.
 
