@@ -4,6 +4,10 @@ This project is a fluid simulation sample built using the Bevy engine.
 
 Try it on [here](https://narasan49.github.io/bevy-fluid-sample/)!
 
+![img](./docs/screenshot.png)
+
+Screenshot: (Left) x-ward velocity field, (Right) pressure field with moving solid obstacles.
+
 ## Features
 - [x] Invicid, incompressible 2D fluid simulation
 - [x] Free boundary condition at the boundary of calculation domain
