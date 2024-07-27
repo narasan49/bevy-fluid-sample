@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::WindowMode};
 
 pub struct GameUiPlugin;
 
@@ -7,6 +7,9 @@ pub struct ResetButton;
 
 #[derive(Component)]
 pub struct AddButton;
+
+#[derive(Component)]
+pub struct ToggleFullscreen;
 
 const BUTTON_COLOR: Color = Color::LinearRgba(LinearRgba::WHITE);
 const HOVERED_COLOR: Color = Color::LinearRgba(LinearRgba {
@@ -41,7 +44,7 @@ fn basic_button() -> ButtonBundle {
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup)
-            .add_systems(Update, button_update);
+            .add_systems(Update, (button_update, toggle_fullscreen));
     }
 }
 
@@ -83,6 +86,23 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ));
                 })
                 .insert(AddButton);
+
+            let fullscreen_icon = asset_server.load("kenney_onscreen-controls/Sprites/flat-dark/flatDark29.png");
+            parent.spawn(ButtonBundle {
+                style: Style {
+                    width: Val::Px(50.0),
+                    height: Val::Px(50.0),
+                    border: UiRect::all(Val::Px(2.0)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                border_color: BorderColor(Color::BLACK),
+                background_color: BUTTON_COLOR.into(),
+                image: UiImage::new(fullscreen_icon),
+                ..default()
+            })
+            .insert(ToggleFullscreen);
         });
 }
 
@@ -103,6 +123,24 @@ fn button_update(
             Interaction::None => {
                 *color = BUTTON_COLOR.into();
             }
+        }
+    }
+}
+
+fn toggle_fullscreen(
+    mut window_query: Query<&mut Window>,
+    interaction_query: Query<&Interaction,
+            (Changed<Interaction>, With<Button>, With<ToggleFullscreen>),
+        >
+) {
+    for interaction in interaction_query.iter() {
+        let Ok(mut window) = window_query.get_single_mut() else { return };
+    
+        if *interaction == Interaction::Pressed {
+            window.mode = match window.mode {
+                WindowMode::BorderlessFullscreen => WindowMode::Windowed,
+                _ => WindowMode::BorderlessFullscreen,
+            };
         }
     }
 }
