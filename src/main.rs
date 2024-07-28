@@ -5,6 +5,7 @@ mod ui;
 
 // use advection_plugin::AdvectionPlugin;
 use bevy::{
+    asset::AssetMetaCheck,
     core::FrameCount,
     math::vec3,
     prelude::*,
@@ -29,6 +30,14 @@ const HEIGHT: f32 = 720.0;
 
 fn main() {
     let mut app = App::new();
+    // [workaround] Asset meta files cannot be found on browser.
+    // see also: https://github.com/bevyengine/bevy/issues/10157
+    let meta_check = if cfg!(target_os = "wasm32") {
+        AssetMetaCheck::Never
+    } else {
+        AssetMetaCheck::Always
+    };
+
     app.add_plugins(
         DefaultPlugins
             .set(WindowPlugin {
@@ -44,6 +53,10 @@ fn main() {
                     backends: Some(Backends::DX12 | Backends::BROWSER_WEBGPU),
                     ..default()
                 }),
+                ..default()
+            })
+            .set(AssetPlugin {
+                meta_check,
                 ..default()
             }),
     )
