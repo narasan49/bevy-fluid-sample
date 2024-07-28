@@ -32,7 +32,7 @@ fn main() {
     let mut app = App::new();
     // [workaround] Asset meta files cannot be found on browser.
     // see also: https://github.com/bevyengine/bevy/issues/10157
-    let meta_check = if cfg!(target_os = "wasm32") {
+    let meta_check = if cfg!(target_arch = "wasm32") {
         AssetMetaCheck::Never
     } else {
         AssetMetaCheck::Always
