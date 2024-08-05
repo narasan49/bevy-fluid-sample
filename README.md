@@ -31,7 +31,7 @@ cd bevy-fluid-sample
 3. Build and run the project:
 
 ```ps1
-cargo run
+cargo run --example demo
 ```
 
 ## Acknowledgments
