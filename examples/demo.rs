@@ -1,7 +1,4 @@
-mod advection_plugin;
-mod euler_fluid;
-mod texture;
-mod ui;
+extern crate bevy_fluid;
 
 // use advection_plugin::AdvectionPlugin;
 use bevy::{
@@ -14,16 +11,20 @@ use bevy::{
         RenderPlugin,
     },
 };
-use euler_fluid::{
-    advection::AdvectionMaterial,
-    fluid_material::FluidMaterial,
-    geometry::{self},
-    uniform::SimulationUniform,
-    FluidPlugin,
+
+use bevy_fluid::{
+    euler_fluid::{
+        advection::AdvectionMaterial,
+        fluid_material::FluidMaterial,
+        geometry::{self},
+        uniform::SimulationUniform,
+        FluidPlugin,
+    },
+    ui::{AddButton, GameUiPlugin, ResetButton}
 };
+
 use iyes_perf_ui::{entries::PerfUiCompleteBundle, PerfUiPlugin};
 use rand::Rng;
-use ui::{AddButton, GameUiPlugin, ResetButton};
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 720.0;
@@ -140,9 +141,9 @@ fn update_geometry(
     mut object_query: Query<(&geometry::Circle, &mut Transform, &mut geometry::Velocity)>,
     uniform_query: Query<&SimulationUniform>,
 ) {
-    let dt = uniform_query.single().dt * 0.1;
+    let dt = uniform_query.single().dt;
     let t = frame.0 as f32 * dt;
-    let freq = 1.0;
+    let freq = 0.1;
     for (_circle, mut transform, mut velocity) in &mut object_query {
         let u = 100.0 * freq * f32::cos(t * freq);
         velocity.u = u;
