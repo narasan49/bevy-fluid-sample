@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 bevy = {version = "0.14.0", features = ["webgpu"]}
 bytemuck = "1.15.0"
+
+[dev-dependencies]
 iyes_perf_ui = "0.3.0"
 rand = "0.8.5"
 
