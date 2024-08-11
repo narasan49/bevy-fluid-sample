@@ -41,6 +41,8 @@ const WORKGROUP_SIZE: u32 = 8;
 const FLUID_UNIFORM_SHADER_HANDLE: Handle<Shader> =
     Handle::weak_from_u128(0x8B9323522322463BA8CF530771C532EF);
 
+const COORDINATE_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(0x9F8E2E5B1E5F40C096C31175C285BF11);
+
 pub struct FluidPlugin;
 
 impl Plugin for FluidPlugin {
@@ -100,6 +102,13 @@ impl Plugin for FluidPlugin {
             "../assets/shaders/fluid_uniform.wgsl",
             Shader::from_wgsl
         );
+
+        load_internal_asset!(
+            app,
+            COORDINATE_SHADER_HANDLE,
+            "../assets/shaders/coordinate.wgsl",
+            Shader::from_wgsl
+        )
     }
 
     fn finish(&self, app: &mut App) {
