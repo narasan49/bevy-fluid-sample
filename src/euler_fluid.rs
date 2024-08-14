@@ -1,3 +1,4 @@
+pub mod add_force;
 pub mod advection;
 pub mod fluid_material;
 pub mod geometry;
@@ -5,6 +6,7 @@ pub mod grid_label;
 pub mod projection;
 pub mod uniform;
 
+use add_force::{AddForceBindGroup, AddForceMaterial, AddForcePipeline};
 use advection::{AdvectionBindGroup, AdvectionMaterial, AdvectionPipeline};
 use bevy::{
     asset::load_internal_asset,
@@ -19,7 +21,9 @@ use bevy::{
         renderer::RenderDevice,
         Render, RenderApp, RenderSet,
     },
+    sprite::Material2dPlugin,
 };
+use fluid_material::VelocityMaterial;
 use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUniform, Velocity};
 use grid_label::{GridLabelBindGroup, GridLabelMaterial, GridLabelPipeline};
 use projection::{
@@ -41,15 +45,15 @@ const WORKGROUP_SIZE: u32 = 8;
 const FLUID_UNIFORM_SHADER_HANDLE: Handle<Shader> =
     Handle::weak_from_u128(0x8B9323522322463BA8CF530771C532EF);
 
-const COORDINATE_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(0x9F8E2E5B1E5F40C096C31175C285BF11);
+const COORDINATE_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x9F8E2E5B1E5F40C096C31175C285BF11);
 
 pub struct FluidPlugin;
 
 impl Plugin for FluidPlugin {
     fn build(&self, app: &mut App) {
-        app
-            // .add_plugins(ExtractResourcePlugin::<VelocityTexture>::default())
-            .add_plugins(ExtractResourcePlugin::<AdvectionMaterial>::default())
+        app.add_plugins(ExtractResourcePlugin::<AdvectionMaterial>::default())
+            .add_plugins(ExtractResourcePlugin::<AddForceMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<DivergenceMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<SolvePressureMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<JacobiMaterial>::default())
@@ -68,6 +72,10 @@ impl Plugin for FluidPlugin {
             .add_systems(
                 Render,
                 prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                add_force::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
             )
             .add_systems(
                 Render,
@@ -116,7 +124,7 @@ impl Plugin for FluidPlugin {
     fn finish(&self, app: &mut App) {
         let render_app = app.sub_app_mut(RenderApp);
         render_app.init_resource::<AdvectionPipeline>();
-        // render_app.init_resource::<FluidPipeline>();
+        render_app.init_resource::<AddForcePipeline>();
         render_app.init_resource::<SolvePressurePipeline>();
         render_app.init_resource::<DivergencePipeline>();
         render_app.init_resource::<JacobiPipeline>();
@@ -173,6 +181,12 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
         v_in: v0.clone(),
         v_out: v1.clone(),
     });
+    commands.insert_resource(AddForceMaterial {
+        force: vec![],
+        position: vec![],
+        u: u1.clone(),
+        v: v1.clone(),
+    });
     commands.insert_resource(DivergenceMaterial {
         u: u1.clone(),
         v: v1.clone(),
@@ -199,14 +213,14 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
 
     commands.spawn(SimulationUniform {
         dx: 1.0f32,
-        dt: 0.1f32,
+        dt: 0.5f32,
         rho: 1.293f32,
     });
 }
 
 fn update(mut query: Query<&mut SimulationUniform>, _time: Res<Time>) {
     for mut uniform in &mut query {
-        uniform.dt = 0.1;
+        uniform.dt = 0.5;
     }
 }
 
@@ -253,6 +267,7 @@ impl render_graph::Node for FluidNode {
     // update node state
     fn update(&mut self, world: &mut World) {
         let advection_pipeline = world.resource::<AdvectionPipeline>();
+        let add_force_pipeline = world.resource::<AddForcePipeline>();
         let divergence_pipeline = world.resource::<DivergencePipeline>();
         let jacobi_pipeline = world.resource::<JacobiPipeline>();
         let solve_pipeline = world.resource::<SolvePressurePipeline>();
@@ -275,6 +290,8 @@ impl render_graph::Node for FluidNode {
             FluidState::Init => {
                 let advection_pipeline =
                     pipeline_cache.get_compute_pipeline_state(advection_pipeline.pipeline);
+                let add_force_pipeline =
+                    pipeline_cache.get_compute_pipeline_state(add_force_pipeline.pipeline);
                 let jacobi_pipeline_state =
                     pipeline_cache.get_compute_pipeline_state(jacobi_pipeline.pipeline);
                 let jacobi_swap_pipeline =
@@ -287,6 +304,7 @@ impl render_graph::Node for FluidNode {
                     pipeline_cache.get_compute_pipeline_state(grid_label_pipeline.update_pipeline);
                 match (
                     advection_pipeline,
+                    add_force_pipeline,
                     jacobi_pipeline_state,
                     jacobi_swap_pipeline,
                     solve_pipeline,
@@ -294,6 +312,7 @@ impl render_graph::Node for FluidNode {
                     grid_label_pipeline,
                 ) {
                     (
+                        CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
@@ -364,6 +383,16 @@ impl render_graph::Node for FluidNode {
                 pass.set_bind_group(0, advection_bind_group, &[]);
                 pass.set_bind_group(1, uniform_bind_group, &[]);
                 pass.set_bind_group(2, grid_label_bind_group, &[]);
+                pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
+
+                // Add force if triggered.
+                let add_force_pipeline = world.resource::<AddForcePipeline>();
+                let add_force_pipeline = pipeline_cache
+                    .get_compute_pipeline(add_force_pipeline.pipeline)
+                    .unwrap();
+                let add_force_bind_group = &world.resource::<AddForceBindGroup>().0;
+                pass.set_pipeline(add_force_pipeline);
+                pass.set_bind_group(0, add_force_bind_group, &vec![]);
                 pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
 
                 let divergence_pipeline = world.resource::<DivergencePipeline>();
