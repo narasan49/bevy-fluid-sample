@@ -6,10 +6,11 @@ use bevy::{
     input::mouse::MouseMotion,
     prelude::*,
     render::{
+        camera::CameraProjection,
         settings::{Backends, WgpuSettings},
         RenderPlugin,
     },
-    sprite::MaterialMesh2dBundle,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
     window::PrimaryWindow,
 };
 
@@ -20,6 +21,9 @@ use bevy_fluid::euler_fluid::{
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 720.0;
+
+#[derive(Component)]
+struct MeshMarker;
 
 fn main() {
     let mut app = App::new();
@@ -91,12 +95,14 @@ fn on_advection_initialized(
                 v: Some(advection.v_in.clone()),
             });
 
-            commands.spawn(MaterialMesh2dBundle {
-                mesh: mesh.into(),
-                transform: Transform::default().with_scale(Vec3::splat(512.)),
-                material,
-                ..default()
-            });
+            commands
+                .spawn(MaterialMesh2dBundle {
+                    mesh: mesh.into(),
+                    transform: Transform::default().with_scale(Vec3::splat(512.0)),
+                    material,
+                    ..default()
+                })
+                .insert(MeshMarker);
         }
     }
 }
@@ -112,14 +118,27 @@ fn mouse_motion(
     mut mouse_motion: EventReader<MouseMotion>,
     mut force_material: ResMut<AddForceMaterial>,
     q_window: Query<&Window, With<PrimaryWindow>>,
+    q_camera: Query<&OrthographicProjection, With<Camera2d>>,
 ) {
     if mouse_button_input.pressed(MouseButton::Left) {
-        if let Some(cursor_position) = q_window.single().cursor_position() {
+        let window = q_window.single();
+        if let Some(cursor_position) = window.cursor_position() {
             let force = mouse_motion
                 .read()
                 .map(|mouse| mouse.delta)
                 .collect::<Vec<_>>();
-            let position = vec![cursor_position; force.len()];
+
+            let window_size = window.size();
+            let normalized_position = 2.0 * (cursor_position - window_size) / window_size + 1.0;
+            let view = q_camera.single().get_clip_from_view().inverse();
+            let uv = view.mul_vec4(Vec4::new(
+                normalized_position.x,
+                normalized_position.y,
+                0.0,
+                1.0,
+            ));
+
+            let position = vec![uv.xy() + Vec2::splat(256.); force.len()];
             force_material.force = force;
             force_material.position = position;
 
