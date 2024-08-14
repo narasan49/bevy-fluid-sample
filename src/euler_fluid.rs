@@ -65,7 +65,7 @@ impl Plugin for FluidPlugin {
             .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
             .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
             .add_systems(Startup, setup)
-            .add_systems(Update, (update, update_geometry));
+            .add_systems(Update, update_geometry);
 
         let render_app = app.sub_app_mut(RenderApp);
         render_app
@@ -210,18 +210,6 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
         v_solid,
     });
     commands.insert_resource(CircleCollectionMaterial { circles: vec![] });
-
-    commands.spawn(SimulationUniform {
-        dx: 1.0f32,
-        dt: 0.5f32,
-        rho: 1.293f32,
-    });
-}
-
-fn update(mut query: Query<&mut SimulationUniform>, _time: Res<Time>) {
-    for mut uniform in &mut query {
-        uniform.dt = 0.5;
-    }
 }
 
 fn update_geometry(

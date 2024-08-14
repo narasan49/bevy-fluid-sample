@@ -15,7 +15,7 @@ use bevy::{
 
 use bevy_fluid::euler_fluid::{
     add_force::AddForceMaterial, advection::AdvectionMaterial, fluid_material::VelocityMaterial,
-    FluidPlugin,
+    uniform::SimulationUniform, FluidPlugin,
 };
 
 const WIDTH: f32 = 1280.0;
@@ -55,7 +55,7 @@ fn main() {
     )
     .add_plugins(FluidPlugin)
     .add_systems(Startup, setup_scene)
-    .add_systems(Update, on_advection_initialized)
+    .add_systems(Update, (on_advection_initialized, update))
     .add_systems(Update, mouse_motion);
 
     app.run();
@@ -65,6 +65,12 @@ fn setup_scene(mut commands: Commands) {
     commands
         .spawn(Camera2dBundle::default())
         .insert(Name::new("Camera"));
+
+    commands.spawn(SimulationUniform {
+        dx: 1.0f32,
+        dt: 0.5f32,
+        rho: 1.293f32,
+    });
 }
 
 fn on_advection_initialized(
@@ -92,6 +98,12 @@ fn on_advection_initialized(
                 ..default()
             });
         }
+    }
+}
+
+fn update(mut query: Query<&mut SimulationUniform>, _time: Res<Time>) {
+    for mut uniform in &mut query {
+        uniform.dt = 0.5;
     }
 }
 
