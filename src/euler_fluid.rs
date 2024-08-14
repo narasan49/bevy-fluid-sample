@@ -58,6 +58,8 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())
+            .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
+            .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
             .add_systems(Startup, setup)
             .add_systems(Update, (update, update_geometry));
 
@@ -148,12 +150,7 @@ fn prepare_bind_group(
     // info!("Uniform Bindgroup Created.");
 }
 
-fn setup(
-    mut commands: Commands,
-    mut images: ResMut<Assets<Image>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<FluidMaterial>>,
-) {
+fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let u0 = images.new_texture_storage(SIZE_U, TextureFormat::R32Float);
     let u1 = images.new_texture_storage(SIZE_U, TextureFormat::R32Float);
 
@@ -168,22 +165,6 @@ fn setup(
     let grid_label = images.new_texture_storage(SIZE, TextureFormat::R32Uint);
     let u_solid = images.new_texture_storage(SIZE, TextureFormat::R32Float);
     let v_solid = images.new_texture_storage(SIZE, TextureFormat::R32Float);
-
-    let mesh = meshes.add(Mesh::from(Plane3d::default()));
-
-    let material = materials.add(FluidMaterial {
-        base_color: LinearRgba::RED,
-        velocity_texture: Some(p0.clone()),
-    });
-
-    commands.spawn(SimulationBundle {
-        name: Name::new("sim"),
-        material: MaterialMeshBundle {
-            mesh,
-            material,
-            ..default()
-        },
-    });
 
     info!("inserting fluid resources.");
     commands.insert_resource(AdvectionMaterial {

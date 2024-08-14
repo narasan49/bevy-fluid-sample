@@ -15,12 +15,12 @@ use bevy::{
 use bevy_fluid::{
     euler_fluid::{
         advection::AdvectionMaterial,
-        fluid_material::FluidMaterial,
+        fluid_material::VelocityMaterial,
         geometry::{self},
         uniform::SimulationUniform,
         FluidPlugin,
     },
-    ui::{AddButton, GameUiPlugin, ResetButton}
+    ui::{AddButton, GameUiPlugin, ResetButton},
 };
 
 use iyes_perf_ui::{entries::PerfUiCompleteBundle, PerfUiPlugin};
@@ -112,16 +112,18 @@ fn on_advection_initialized(
     mut commands: Commands,
     advection: Option<Res<AdvectionMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<FluidMaterial>>,
+    mut materials: ResMut<Assets<VelocityMaterial>>,
 ) {
     if let Some(advection) = advection {
         if advection.is_changed() {
             // spwan plane to visualize advection
             let mesh =
                 meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(-1.0, 0.0, 0.0)));
-            let material = materials.add(FluidMaterial {
-                base_color: LinearRgba::RED,
-                velocity_texture: Some(advection.u_in.clone()),
+            let material = materials.add(VelocityMaterial {
+                offset: 0.5,
+                scale: 0.1,
+                u: Some(advection.u_in.clone()),
+                v: Some(advection.v_in.clone()),
             });
             commands.spawn((
                 Name::new("advection"),
