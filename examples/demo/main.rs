@@ -1,4 +1,5 @@
 extern crate bevy_fluid;
+mod ui;
 
 // use advection_plugin::AdvectionPlugin;
 use bevy::{
@@ -12,16 +13,16 @@ use bevy::{
     },
 };
 
-use bevy_fluid::{
+use bevy_fluid::
     euler_fluid::{
         advection::AdvectionMaterial,
         fluid_material::VelocityMaterial,
         geometry::{self},
         uniform::SimulationUniform,
         FluidPlugin,
-    },
-    ui::{AddButton, GameUiPlugin, ResetButton},
-};
+    };
+
+use ui::{AddButton, GameUiPlugin, ResetButton};
 
 use iyes_perf_ui::{entries::PerfUiCompleteBundle, PerfUiPlugin};
 use rand::Rng;
