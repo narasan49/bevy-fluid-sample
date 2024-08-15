@@ -40,8 +40,13 @@ fn advection(
         textureStore(u_out, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
     } else {
         let backtraced_x_u: vec2<f32> = runge_kutta(u_in, v_in, x_u, constants.dt);
-        let backtraced_u: f32 = u_at(u_in, backtraced_x_u);
-        textureStore(u_out, x_u, vec4<f32>(backtraced_u, 0.0, 0.0, 0.0));
+        let dim_u = vec2<f32>(textureDimensions(u_in));
+        if (backtraced_x_u.x < 0.0 || backtraced_x_u.x > dim_u.x - 1.0 || backtraced_x_u.y < 0.0 || backtraced_x_u.y > dim_u.y - 1.0) {
+            textureStore(u_out, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        } else {
+            let backtraced_u: f32 = u_at(u_in, backtraced_x_u);
+            textureStore(u_out, x_u, vec4<f32>(backtraced_u, 0.0, 0.0, 0.0));
+        }
     }
 
     let label_v = textureLoad(grid_label, x_v - vec2<i32>(0, 1)).r;
@@ -50,8 +55,13 @@ fn advection(
         textureStore(v_out, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));
     } else {
         let backtraced_x_v: vec2<f32> = runge_kutta(u_in, v_in, x_v, constants.dt);
-        let backtraced_v: f32 = v_at(v_in, backtraced_x_v);
-        textureStore(v_out, x_v, vec4<f32>(backtraced_v, 0.0, 0.0, 0.0));
+        let dim_v = vec2<f32>(textureDimensions(v_in));
+        if (backtraced_x_v.x < 0.0 || backtraced_x_v.x > dim_v.x - 1.0 || backtraced_x_v.y < 0.0 || backtraced_x_v.y > dim_v.y - 1.0) {
+            textureStore(v_out, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        } else {
+            let backtraced_v: f32 = v_at(v_in, backtraced_x_v);
+            textureStore(v_out, x_v, vec4<f32>(backtraced_v, 0.0, 0.0, 0.0));
+        }
     }
 }
 

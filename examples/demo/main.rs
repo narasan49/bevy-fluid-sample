@@ -1,4 +1,5 @@
 extern crate bevy_fluid;
+mod ui;
 
 // use advection_plugin::AdvectionPlugin;
 use bevy::{
@@ -12,16 +13,15 @@ use bevy::{
     },
 };
 
-use bevy_fluid::{
-    euler_fluid::{
-        advection::AdvectionMaterial,
-        fluid_material::FluidMaterial,
-        geometry::{self},
-        uniform::SimulationUniform,
-        FluidPlugin,
-    },
-    ui::{AddButton, GameUiPlugin, ResetButton}
+use bevy_fluid::euler_fluid::{
+    advection::AdvectionMaterial,
+    fluid_material::VelocityMaterial,
+    geometry::{self},
+    uniform::SimulationUniform,
+    FluidPlugin,
 };
+
+use ui::{AddButton, GameUiPlugin, ResetButton};
 
 use iyes_perf_ui::{entries::PerfUiCompleteBundle, PerfUiPlugin};
 use rand::Rng;
@@ -64,7 +64,7 @@ fn main() {
     .add_plugins(FluidPlugin)
     .add_plugins(GameUiPlugin)
     .add_systems(Startup, setup_scene)
-    .add_systems(Update, (on_advection_initialized, update_geometry))
+    .add_systems(Update, (on_advection_initialized, update, update_geometry))
     .add_systems(Update, (button_update, add_object));
 
     if cfg!(target_os = "windows") {
@@ -103,6 +103,12 @@ fn setup_scene(mut commands: Commands) {
         })
         .insert(Name::new("Light"));
 
+    commands.spawn(SimulationUniform {
+        dx: 1.0f32,
+        dt: 0.5f32,
+        rho: 1.293f32,
+    });
+
     if cfg!(target_os = "windows") {
         commands.spawn(PerfUiCompleteBundle::default());
     }
@@ -112,16 +118,18 @@ fn on_advection_initialized(
     mut commands: Commands,
     advection: Option<Res<AdvectionMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<FluidMaterial>>,
+    mut materials: ResMut<Assets<VelocityMaterial>>,
 ) {
     if let Some(advection) = advection {
         if advection.is_changed() {
             // spwan plane to visualize advection
             let mesh =
                 meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(-1.0, 0.0, 0.0)));
-            let material = materials.add(FluidMaterial {
-                base_color: LinearRgba::RED,
-                velocity_texture: Some(advection.u_in.clone()),
+            let material = materials.add(VelocityMaterial {
+                offset: 0.5,
+                scale: 0.1,
+                u: Some(advection.u_in.clone()),
+                v: Some(advection.v_in.clone()),
             });
             commands.spawn((
                 Name::new("advection"),
@@ -132,6 +140,12 @@ fn on_advection_initialized(
                 },
             ));
         }
+    }
+}
+
+fn update(mut query: Query<&mut SimulationUniform>, _time: Res<Time>) {
+    for mut uniform in &mut query {
+        uniform.dt = 0.5;
     }
 }
 
