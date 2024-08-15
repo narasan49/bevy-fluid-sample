@@ -10,7 +10,7 @@ use bevy::{
         settings::{Backends, WgpuSettings},
         RenderPlugin,
     },
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+    sprite::MaterialMesh2dBundle,
     window::PrimaryWindow,
 };
 
@@ -116,6 +116,7 @@ fn update(mut query: Query<&mut SimulationUniform>, _time: Res<Time>) {
 fn mouse_motion(
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     mut mouse_motion: EventReader<MouseMotion>,
+    touches: Res<Touches>,
     mut force_material: ResMut<AddForceMaterial>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<&OrthographicProjection, With<Camera2d>>,
@@ -128,24 +129,45 @@ fn mouse_motion(
                 .map(|mouse| mouse.delta)
                 .collect::<Vec<_>>();
 
-            let window_size = window.size();
-            let normalized_position = 2.0 * (cursor_position - window_size) / window_size + 1.0;
-            let view = q_camera.single().get_clip_from_view().inverse();
-            let uv = view.mul_vec4(Vec4::new(
-                normalized_position.x,
-                normalized_position.y,
-                0.0,
-                1.0,
-            ));
-
-            let position = vec![uv.xy() + Vec2::splat(256.); force.len()];
+            let position = screen_to_mesh_coordinate(cursor_position, window, q_camera.single(), Vec2::splat(512.));
+            let position = vec![position; force.len()];
             force_material.force = force;
             force_material.position = position;
 
             return;
         }
     }
+    
+    let touch_forces = touches.iter()
+        .map(|touch| {
+            touch.delta()
+        })
+        .collect::<Vec<_>>();
+    let touch_position = touches.iter()
+        .map(|touch| {
+            screen_to_mesh_coordinate(touch.position(), q_window.single(), q_camera.single(), Vec2::splat(512.))
+        })
+        .collect::<Vec<_>>();
+    force_material.force = touch_forces;
+    force_material.position = touch_position;
+}
 
-    force_material.force = vec![];
-    force_material.position = vec![];
+fn screen_to_mesh_coordinate(
+    position: Vec2,
+    window: &Window,
+    projection: &OrthographicProjection,
+    scale: Vec2,
+) -> Vec2 {
+    let window_size = window.size();
+    let normalized_position = 2.0 * (position - window_size) / window_size + 1.0;
+    let inv_proj = projection.get_clip_from_view().inverse();
+    
+    let position_on_mesh = inv_proj.mul_vec4(Vec4::new(
+        normalized_position.x,
+        normalized_position.y,
+        0.0,
+        1.0,
+    ));
+
+    position_on_mesh.xy() + 0.5 * scale
 }
