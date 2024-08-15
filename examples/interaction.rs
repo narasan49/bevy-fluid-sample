@@ -41,6 +41,7 @@ fn main() {
                 primary_window: Some(Window {
                     resolution: (WIDTH, HEIGHT).into(),
                     title: "bevy fluid".to_string(),
+                    fit_canvas_to_parent: true,
                     ..default()
                 }),
                 ..default()
