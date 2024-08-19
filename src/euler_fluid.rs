@@ -7,7 +7,7 @@ pub mod materials;
 pub mod projection;
 pub mod uniform;
 
-use add_force::{AddForceBindGroup, AddForceMaterial, AddForcePipeline};
+use add_force::AddForcePipeline;
 use advection::AdvectionPipeline;
 use bevy::{
     asset::load_internal_asset,
@@ -27,11 +27,13 @@ use bevy::{
 use fluid_material::VelocityMaterial;
 use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUniform, Velocity};
 use grid_label::{GridLabelBindGroup, GridLabelMaterial, GridLabelPipeline};
-use materials::{prepare_bind_group::PrepareBindGroup, staggered_velocity::{
-    IntermediateVelocityBindGroup, IntermediateVelocityBindGroupLayout,
-    StaggeredIntermediateVelocityMaterial, StaggeredVelocityMaterial, VelocityBindGroup,
-    VelocityBindGroupLayout,
-}};
+use materials::{
+    local_force::{LocalForceBindGroup, LocalForceBindGroupLayout, LocalForceMaterial}, prepare_bind_group::PrepareBindGroup, staggered_velocity::{
+        IntermediateVelocityBindGroup, IntermediateVelocityBindGroupLayout,
+        StaggeredIntermediateVelocityMaterial, StaggeredVelocityMaterial, VelocityBindGroup,
+        VelocityBindGroupLayout,
+    }
+};
 use projection::{
     divergence::{self, DivergenceBindGroup, DivergenceMaterial, DivergencePipeline},
     jacobi_iteration::{self, JacobiBindGroup, JacobiMaterial, JacobiPipeline},
@@ -60,7 +62,7 @@ impl Plugin for FluidPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ExtractResourcePlugin::<StaggeredVelocityMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<StaggeredIntermediateVelocityMaterial>::default())
-            .add_plugins(ExtractResourcePlugin::<AddForceMaterial>::default())
+            .add_plugins(ExtractResourcePlugin::<LocalForceMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<DivergenceMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<SolvePressureMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<JacobiMaterial>::default())
@@ -82,15 +84,15 @@ impl Plugin for FluidPlugin {
             )
             .add_systems(
                 Render,
-                add_force::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+                LocalForceBindGroupLayout::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
             )
             .add_systems(
                 Render,
-                materials::staggered_velocity::VelocityBindGroupLayout::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+                VelocityBindGroupLayout::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
             )
             .add_systems(
                 Render,
-                materials::staggered_velocity::IntermediateVelocityBindGroupLayout::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+                IntermediateVelocityBindGroupLayout::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
             )
             .add_systems(
                 Render,
@@ -136,6 +138,7 @@ impl Plugin for FluidPlugin {
         let render_app = app.sub_app_mut(RenderApp);
         render_app.init_resource::<VelocityBindGroupLayout>();
         render_app.init_resource::<IntermediateVelocityBindGroupLayout>();
+        render_app.init_resource::<LocalForceBindGroupLayout>();
 
         render_app.init_resource::<AdvectionPipeline>();
         render_app.init_resource::<AddForcePipeline>();
@@ -199,11 +202,9 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
         v: v1.clone(),
     });
 
-    commands.insert_resource(AddForceMaterial {
+    commands.insert_resource(LocalForceMaterial {
         force: vec![],
         position: vec![],
-        u: u1.clone(),
-        v: v1.clone(),
     });
     commands.insert_resource(DivergenceMaterial {
         u: u1.clone(),
@@ -403,10 +404,10 @@ impl render_graph::Node for FluidNode {
                 let add_force_pipeline = pipeline_cache
                     .get_compute_pipeline(add_force_pipeline.pipeline)
                     .unwrap();
-                let add_force_bind_group = &world.resource::<AddForceBindGroup>().0;
+                let local_force_bind_group = &world.resource::<LocalForceBindGroup>().0;
                 pass.set_pipeline(add_force_pipeline);
-                pass.set_bind_group(0, add_force_bind_group, &vec![]);
-                pass.set_bind_group(1, uniform_bind_group, &[]);
+                pass.set_bind_group(0, local_force_bind_group, &vec![]);
+                pass.set_bind_group(2, uniform_bind_group, &[]);
                 pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
 
                 let divergence_pipeline = world.resource::<DivergencePipeline>();

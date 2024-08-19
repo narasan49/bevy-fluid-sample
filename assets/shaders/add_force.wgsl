@@ -2,10 +2,10 @@
 
 @group(0) @binding(0) var<storage, read> force: array<vec2<f32>>;
 @group(0) @binding(1) var<storage, read> position: array<vec2<f32>>;
-@group(0) @binding(2) var u: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(3) var v: texture_storage_2d<r32float, read_write>;
+@group(1) @binding(0) var u: texture_storage_2d<r32float, read_write>;
+@group(1) @binding(1) var v: texture_storage_2d<r32float, read_write>;
 
-@group(1) @binding(0) var<uniform> constants: SimulationUniform;
+@group(2) @binding(0) var<uniform> constants: SimulationUniform;
 
 @compute
 @workgroup_size(1, 64, 1)
