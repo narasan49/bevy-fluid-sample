@@ -1,7 +1,6 @@
 extern crate bevy_fluid;
 mod ui;
 
-// use advection_plugin::AdvectionPlugin;
 use bevy::{
     asset::AssetMetaCheck,
     core::FrameCount,
