@@ -1,18 +1,19 @@
 #import bevy_fluid::fluid_uniform::SimulationUniform;
 
 @group(0) @binding(0) var u_in: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(1) var u_out: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(2) var v_in: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(3) var v_out: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(1) var v_in: texture_storage_2d<r32float, read_write>;
+@group(1) @binding(0) var u_out: texture_storage_2d<r32float, read_write>;
+@group(1) @binding(1) var v_out: texture_storage_2d<r32float, read_write>;
 
-@group(1) @binding(0) var<uniform> constants: SimulationUniform;
+@group(2) @binding(0) var<uniform> constants: SimulationUniform;
 
-@group(2) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
-@group(2) @binding(1) var u_solid: texture_storage_2d<r32float, read_write>;
-@group(2) @binding(2) var v_solid: texture_storage_2d<r32float, read_write>;
+@group(3) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
+@group(3) @binding(1) var u_solid: texture_storage_2d<r32float, read_write>;
+@group(3) @binding(2) var v_solid: texture_storage_2d<r32float, read_write>;
 
 // ToDo: Move to a separate file
-@compute @workgroup_size(1, 64, 1)
+@compute
+@workgroup_size(1, 64, 1)
 fn initialize(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {
@@ -26,7 +27,8 @@ fn initialize(
     textureStore(v_out, x_v, vec4<f32>(speed, 0.0, 0.0, 0.0));
 }
 
-@compute @workgroup_size(1, 64, 1)
+@compute
+@workgroup_size(1, 64, 1)
 fn advection(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {
@@ -66,7 +68,8 @@ fn advection(
 }
 
 // ToDo: Move to a separate file
-@compute @workgroup_size(1, 64, 1)
+@compute
+@workgroup_size(1, 64, 1)
 fn swap(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {

@@ -14,8 +14,9 @@ use bevy::{
 };
 
 use bevy_fluid::euler_fluid::{
-    add_force::AddForceMaterial, advection::AdvectionMaterial, fluid_material::VelocityMaterial,
-    uniform::SimulationUniform, FluidPlugin,
+    add_force::AddForceMaterial, fluid_material::VelocityMaterial,
+    materials::staggered_velocity::StaggeredVelocityMaterial, uniform::SimulationUniform,
+    FluidPlugin,
 };
 
 const WIDTH: f32 = 1280.0;
@@ -79,11 +80,11 @@ fn setup_scene(mut commands: Commands) {
 
 fn on_advection_initialized(
     mut commands: Commands,
-    advection: Option<Res<AdvectionMaterial>>,
+    velocity: Option<Res<StaggeredVelocityMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<VelocityMaterial>>,
 ) {
-    if let Some(advection) = advection {
+    if let Some(advection) = velocity {
         if advection.is_changed() {
             info!("prepare velocity texture");
             // spwan plane to visualize advection
@@ -91,8 +92,8 @@ fn on_advection_initialized(
             let material = materials.add(VelocityMaterial {
                 offset: 0.5,
                 scale: 0.1,
-                u: Some(advection.u_in.clone()),
-                v: Some(advection.v_in.clone()),
+                u: Some(advection.u.clone()),
+                v: Some(advection.v.clone()),
             });
 
             commands
@@ -129,7 +130,12 @@ fn mouse_motion(
                 .map(|mouse| mouse.delta)
                 .collect::<Vec<_>>();
 
-            let position = screen_to_mesh_coordinate(cursor_position, window, q_camera.single(), Vec2::splat(512.));
+            let position = screen_to_mesh_coordinate(
+                cursor_position,
+                window,
+                q_camera.single(),
+                Vec2::splat(512.),
+            );
             let position = vec![position; force.len()];
             force_material.force = force;
             force_material.position = position;
@@ -137,15 +143,20 @@ fn mouse_motion(
             return;
         }
     }
-    
-    let touch_forces = touches.iter()
-        .map(|touch| {
-            touch.delta()
-        })
+
+    let touch_forces = touches
+        .iter()
+        .map(|touch| touch.delta())
         .collect::<Vec<_>>();
-    let touch_position = touches.iter()
+    let touch_position = touches
+        .iter()
         .map(|touch| {
-            screen_to_mesh_coordinate(touch.position(), q_window.single(), q_camera.single(), Vec2::splat(512.))
+            screen_to_mesh_coordinate(
+                touch.position(),
+                q_window.single(),
+                q_camera.single(),
+                Vec2::splat(512.),
+            )
         })
         .collect::<Vec<_>>();
     force_material.force = touch_forces;
@@ -161,7 +172,7 @@ fn screen_to_mesh_coordinate(
     let window_size = window.size();
     let normalized_position = 2.0 * (position - window_size) / window_size + 1.0;
     let inv_proj = projection.get_clip_from_view().inverse();
-    
+
     let position_on_mesh = inv_proj.mul_vec4(Vec4::new(
         normalized_position.x,
         normalized_position.y,
