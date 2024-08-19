@@ -4,16 +4,19 @@ use bevy::{
     prelude::*,
     render::{
         render_resource::{
-            binding_types::uniform_buffer,
-            BindGroupLayoutEntries, CachedComputePipelineId, ComputePipelineDescriptor,
-            PipelineCache, ShaderStages,
+            binding_types::uniform_buffer, BindGroupLayoutEntries, CachedComputePipelineId,
+            ComputePipelineDescriptor, PipelineCache, ShaderStages,
         },
         renderer::RenderDevice,
     },
 };
 
 use super::{
-    materials::{local_force::LocalForceBindGroupLayout, staggered_velocity::IntermediateVelocityBindGroupLayout}, uniform::SimulationUniform,
+    materials::{
+        local_force::LocalForceBindGroupLayout,
+        staggered_velocity::IntermediateVelocityBindGroupLayout,
+    },
+    uniform::SimulationUniform,
 };
 
 #[derive(Resource)]
@@ -52,8 +55,6 @@ impl FromWorld for AddForcePipeline {
             entry_point: Cow::from("add_force"),
         });
 
-        Self {
-            pipeline,
-        }
+        Self { pipeline }
     }
 }

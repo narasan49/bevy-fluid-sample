@@ -14,8 +14,9 @@ use bevy::{
 };
 
 use bevy_fluid::euler_fluid::{
-    add_force::AddForceMaterial, fluid_material::VelocityMaterial,
-    materials::staggered_velocity::StaggeredVelocityMaterial, uniform::SimulationUniform,
+    fluid_material::VelocityMaterial,
+    materials::{local_force::LocalForceMaterial, staggered_velocity::StaggeredVelocityMaterial},
+    uniform::SimulationUniform,
     FluidPlugin,
 };
 
@@ -118,7 +119,7 @@ fn mouse_motion(
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     mut mouse_motion: EventReader<MouseMotion>,
     touches: Res<Touches>,
-    mut force_material: ResMut<AddForceMaterial>,
+    mut force_material: ResMut<LocalForceMaterial>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<&OrthographicProjection, With<Camera2d>>,
 ) {

@@ -9,26 +9,24 @@ use bevy::{
 
 use super::prepare_bind_group::PrepareBindGroup;
 
-#[derive(Resource, Clone, ExtractResource, AsBindGroup)]
-pub struct LocalForceMaterial {
-    #[storage(0, read_only, visibility(compute))]
-    pub force: Vec<Vec2>,
-    #[storage(1, read_only, visibility(compute))]
-    pub position: Vec<Vec2>,
+#[derive(Resource, ExtractResource, AsBindGroup, Clone)]
+pub struct DivergenceMaterial {
+    #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
+    pub div: Handle<Image>,
 }
 
 #[derive(Resource)]
-pub struct LocalForceBindGroup(pub BindGroup);
+pub struct DivergenceBindGroupLayout(pub BindGroupLayout);
 
 #[derive(Resource)]
-pub struct LocalForceBindGroupLayout(pub BindGroupLayout);
+pub struct DivergenceBindGroup(pub BindGroup);
 
-impl PrepareBindGroup<LocalForceMaterial> for LocalForceBindGroupLayout {
+impl PrepareBindGroup<DivergenceMaterial> for DivergenceBindGroupLayout {
     fn prepare_bind_group(
         mut commands: Commands,
         bind_group_layout: Res<Self>,
         gpu_images: Res<bevy::render::render_asset::RenderAssets<bevy::render::texture::GpuImage>>,
-        textures: Res<LocalForceMaterial>,
+        textures: Res<DivergenceMaterial>,
         render_device: Res<bevy::render::renderer::RenderDevice>,
         fallback_image: Res<bevy::render::texture::FallbackImage>,
     ) {
@@ -42,14 +40,14 @@ impl PrepareBindGroup<LocalForceMaterial> for LocalForceBindGroupLayout {
             .unwrap()
             .bind_group;
 
-        commands.insert_resource(LocalForceBindGroup(bind_group));
+        commands.insert_resource(DivergenceBindGroup(bind_group));
     }
 }
 
-impl FromWorld for LocalForceBindGroupLayout {
+impl FromWorld for DivergenceBindGroupLayout {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.resource::<RenderDevice>();
-        let bind_group_layout = LocalForceMaterial::bind_group_layout(render_device);
+        let bind_group_layout = DivergenceMaterial::bind_group_layout(render_device);
         Self(bind_group_layout)
     }
 }

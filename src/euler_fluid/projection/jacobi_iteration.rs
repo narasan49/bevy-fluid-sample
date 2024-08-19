@@ -16,12 +16,13 @@ use bevy::{
     },
 };
 
-use crate::euler_fluid::{grid_label::GridLabelMaterial, uniform::SimulationUniform};
+use crate::euler_fluid::{
+    grid_label::GridLabelMaterial, materials::divergence::DivergenceBindGroupLayout,
+    uniform::SimulationUniform,
+};
 
 #[derive(Resource, ExtractResource, AsBindGroup, Clone)]
 pub struct JacobiMaterial {
-    #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
-    pub div: Handle<Image>,
     #[storage_texture(1, image_format = R32Float, access = ReadWrite)]
     pub p0: Handle<Image>,
     #[storage_texture(2, image_format = R32Float, access = ReadWrite)]
@@ -41,6 +42,7 @@ pub struct JacobiPipeline {
 impl FromWorld for JacobiPipeline {
     fn from_world(world: &mut bevy::prelude::World) -> Self {
         let render_device = world.resource();
+        let divergence_bind_group_layout = &world.resource_ref::<DivergenceBindGroupLayout>().0;
         let bind_group_layout = JacobiMaterial::bind_group_layout(render_device);
         let grid_label_bind_group_layout = GridLabelMaterial::bind_group_layout(render_device);
 
@@ -63,6 +65,7 @@ impl FromWorld for JacobiPipeline {
                 bind_group_layout.clone(),
                 uniform_bind_group_layout.clone(),
                 grid_label_bind_group_layout.clone(),
+                divergence_bind_group_layout.clone(),
             ],
             push_constant_ranges: vec![],
             shader: shader.clone(),
