@@ -31,6 +31,10 @@ use materials::{
     divergence::{DivergenceBindGroup, DivergenceBindGroupLayout, DivergenceMaterial},
     local_force::{LocalForceBindGroup, LocalForceBindGroupLayout, LocalForceMaterial},
     prepare_bind_group::PrepareBindGroup,
+    pressure::{
+        IntermediatePressureBindGroupLayout, IntermediatePressureMaterial, PressureBindGroup,
+        PressureBindGroupLayout, PressureMaterial,
+    },
     staggered_velocity::{
         IntermediateVelocityBindGroup, IntermediateVelocityBindGroupLayout,
         StaggeredIntermediateVelocityMaterial, StaggeredVelocityMaterial, VelocityBindGroup,
@@ -39,8 +43,8 @@ use materials::{
 };
 use projection::{
     divergence::DivergencePipeline,
-    jacobi_iteration::{self, JacobiBindGroup, JacobiMaterial, JacobiPipeline},
-    solve::{self, SolvePressureBindGroup, SolvePressureMaterial, SolvePressurePipeline},
+    jacobi_iteration::JacobiPipeline,
+    solve::SolvePressurePipeline,
 };
 use uniform::{SimulationUniform, SimulationUniformBindGroup};
 
@@ -67,8 +71,8 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractResourcePlugin::<StaggeredIntermediateVelocityMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<LocalForceMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<DivergenceMaterial>::default())
-            .add_plugins(ExtractResourcePlugin::<SolvePressureMaterial>::default())
-            .add_plugins(ExtractResourcePlugin::<JacobiMaterial>::default())
+            .add_plugins(ExtractResourcePlugin::<PressureMaterial>::default())
+            .add_plugins(ExtractResourcePlugin::<IntermediatePressureMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<GridLabelMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<CircleCollectionMaterial>::default())
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
@@ -104,11 +108,12 @@ impl Plugin for FluidPlugin {
             )
             .add_systems(
                 Render,
-                solve::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+                PressureBindGroupLayout::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
             )
             .add_systems(
                 Render,
-                jacobi_iteration::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+                IntermediatePressureBindGroupLayout::prepare_bind_group
+                    .in_set(RenderSet::PrepareBindGroups),
             )
             .add_systems(
                 Render,
@@ -144,6 +149,8 @@ impl Plugin for FluidPlugin {
         render_app.init_resource::<IntermediateVelocityBindGroupLayout>();
         render_app.init_resource::<LocalForceBindGroupLayout>();
         render_app.init_resource::<DivergenceBindGroupLayout>();
+        render_app.init_resource::<PressureBindGroupLayout>();
+        render_app.init_resource::<IntermediatePressureBindGroupLayout>();
 
         render_app.init_resource::<AdvectionPipeline>();
         render_app.init_resource::<AddForcePipeline>();
@@ -197,15 +204,9 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let v_solid = images.new_texture_storage(SIZE, TextureFormat::R32Float);
 
     info!("inserting fluid resources.");
-    commands.insert_resource(StaggeredVelocityMaterial {
-        u: u0.clone(),
-        v: v0.clone(),
-    });
+    commands.insert_resource(StaggeredVelocityMaterial { u: u0, v: v0 });
 
-    commands.insert_resource(StaggeredIntermediateVelocityMaterial {
-        u: u1.clone(),
-        v: v1.clone(),
-    });
+    commands.insert_resource(StaggeredIntermediateVelocityMaterial { u: u1, v: v1 });
 
     commands.insert_resource(LocalForceMaterial {
         force: vec![],
@@ -214,22 +215,16 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
 
     commands.insert_resource(DivergenceMaterial { div });
 
-    commands.insert_resource(JacobiMaterial {
-        p0: p0.clone(),
-        p1: p1.clone(),
-    });
-    commands.insert_resource(SolvePressureMaterial {
-        u_in: u1,
-        v_in: v1,
-        u_out: u0,
-        v_out: v0,
-        p: p0,
-    });
+    commands.insert_resource(PressureMaterial { p: p0 });
+
+    commands.insert_resource(IntermediatePressureMaterial { p: p1 });
+
     commands.insert_resource(GridLabelMaterial {
         grid_label,
         u_solid,
         v_solid,
     });
+
     commands.insert_resource(CircleCollectionMaterial { circles: vec![] });
 }
 
@@ -429,11 +424,15 @@ impl render_graph::Node for FluidNode {
                 let swap_pipeline = pipeline_cache
                     .get_compute_pipeline(jacobi_pipeline_bundle.swap_pipeline)
                     .unwrap();
-                let jacobi_bind_group = &world.resource::<JacobiBindGroup>().0;
-                pass.set_bind_group(0, jacobi_bind_group, &[]);
-                pass.set_bind_group(1, uniform_bind_group, &[]);
-                pass.set_bind_group(2, grid_label_bind_group, &[]);
-                pass.set_bind_group(3, divergence_bind_group, &[]);
+
+                let pressure_bind_group = &world.resource::<PressureBindGroup>().0;
+                let intermediate_pressure_bind_group = &world.resource::<PressureBindGroup>().0;
+
+                pass.set_bind_group(0, pressure_bind_group, &[]);
+                pass.set_bind_group(1, intermediate_pressure_bind_group, &[]);
+                pass.set_bind_group(2, uniform_bind_group, &[]);
+                pass.set_bind_group(3, grid_label_bind_group, &[]);
+                pass.set_bind_group(4, divergence_bind_group, &[]);
                 for _ in 0..30 {
                     pass.set_pipeline(&jacobi_pipeline);
                     pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
@@ -445,9 +444,13 @@ impl render_graph::Node for FluidNode {
                 let solve_pipeline = pipeline_cache
                     .get_compute_pipeline(solve_pipeline.pipeline)
                     .unwrap();
-                let solve_bind_group = &world.resource::<SolvePressureBindGroup>().0;
+
                 pass.set_pipeline(&solve_pipeline);
-                pass.set_bind_group(0, &solve_bind_group, &[]);
+                pass.set_bind_group(0, intermediate_velocity_bind_group, &[]);
+                pass.set_bind_group(1, velocity_bind_group, &[]);
+                pass.set_bind_group(2, pressure_bind_group, &[]);
+                pass.set_bind_group(3, uniform_bind_group, &[]);
+                pass.set_bind_group(4, grid_label_bind_group, &[]);
                 pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
             }
         }
