@@ -13,9 +13,9 @@ use bevy::{
 };
 
 use bevy_fluid::euler_fluid::{
+    advection::AdvectionMaterial,
     fluid_material::VelocityMaterial,
     geometry::{self},
-    materials::staggered_velocity::StaggeredVelocityMaterial,
     uniform::SimulationUniform,
     FluidPlugin,
 };
@@ -115,11 +115,11 @@ fn setup_scene(mut commands: Commands) {
 
 fn on_advection_initialized(
     mut commands: Commands,
-    velocity: Option<Res<StaggeredVelocityMaterial>>,
+    advection: Option<Res<AdvectionMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<VelocityMaterial>>,
 ) {
-    if let Some(advection) = velocity {
+    if let Some(advection) = advection {
         if advection.is_changed() {
             // spwan plane to visualize advection
             let mesh =
@@ -127,8 +127,8 @@ fn on_advection_initialized(
             let material = materials.add(VelocityMaterial {
                 offset: 0.5,
                 scale: 0.1,
-                u: Some(advection.u.clone()),
-                v: Some(advection.v.clone()),
+                u: Some(advection.u_in.clone()),
+                v: Some(advection.v_in.clone()),
             });
             commands.spawn((
                 Name::new("advection"),

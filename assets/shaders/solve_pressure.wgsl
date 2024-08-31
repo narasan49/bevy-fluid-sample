@@ -2,17 +2,15 @@
 
 @group(0) @binding(0) var u_in: texture_storage_2d<r32float, read_write>;
 @group(0) @binding(1) var v_in: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(2) var u_out: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(3) var v_out: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(4) var pressure: texture_storage_2d<r32float, read_write>;
 
-@group(1) @binding(0) var u_out: texture_storage_2d<r32float, read_write>;
-@group(1) @binding(1) var v_out: texture_storage_2d<r32float, read_write>;
+@group(1) @binding(0) var<uniform> constants: SimulationUniform;
 
-@group(2) @binding(0) var pressure: texture_storage_2d<r32float, read_write>;
-
-@group(3) @binding(0) var<uniform> constants: SimulationUniform;
-
-@group(4) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
-@group(4) @binding(1) var u_solid: texture_storage_2d<r32float, read_write>;
-@group(4) @binding(2) var v_solid: texture_storage_2d<r32float, read_write>;
+@group(2) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
+@group(2) @binding(1) var u_solid: texture_storage_2d<r32float, read_write>;
+@group(2) @binding(2) var v_solid: texture_storage_2d<r32float, read_write>;
 
 @compute @workgroup_size(1, 64, 1)
 fn solve_pressure(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
