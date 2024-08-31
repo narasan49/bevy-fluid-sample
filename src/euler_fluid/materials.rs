@@ -1,4 +1,5 @@
 pub mod divergence;
+pub mod levelset;
 pub mod local_force;
 pub mod prepare_bind_group;
 pub mod pressure;
