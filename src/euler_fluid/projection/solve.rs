@@ -14,7 +14,10 @@ use bevy::{
 
 use crate::euler_fluid::{
     grid_label::GridLabelMaterial,
-    materials::{pressure::PressureMaterial, staggered_velocity::{IntermediateVelocityBindGroupLayout, VelocityBindGroupLayout}},
+    materials::{
+        pressure::PressureMaterial,
+        staggered_velocity::{IntermediateVelocityBindGroupLayout, VelocityBindGroupLayout},
+    },
     uniform::SimulationUniform,
 };
 
