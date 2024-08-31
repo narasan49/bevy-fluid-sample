@@ -1,25 +1,39 @@
 use std::borrow::Cow;
 
 use bevy::{
-    asset::AssetServer,
+    asset::{AssetServer, Handle},
     prelude::*,
-    render::render_resource::{
-        binding_types::uniform_buffer, AsBindGroup, BindGroupLayoutEntries,
-        CachedComputePipelineId, ComputePipelineDescriptor, PipelineCache, ShaderStages,
+    render::{
+        extract_resource::ExtractResource,
+        render_asset::RenderAssets,
+        render_resource::{
+            binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupLayout,
+            BindGroupLayoutEntries, CachedComputePipelineId, ComputePipelineDescriptor,
+            PipelineCache, ShaderStages,
+        },
+        renderer::RenderDevice,
+        texture::{FallbackImage, GpuImage, Image},
     },
 };
 
-use crate::euler_fluid::{
-    grid_label::GridLabelMaterial,
-    materials::{
-        divergence::DivergenceBindGroupLayout,
-        pressure::{IntermediatePressureBindGroupLayout, PressureBindGroupLayout},
-    },
-    uniform::SimulationUniform,
-};
+use crate::euler_fluid::{grid_label::GridLabelMaterial, uniform::SimulationUniform};
+
+#[derive(Resource, ExtractResource, AsBindGroup, Clone)]
+pub struct JacobiMaterial {
+    #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
+    pub div: Handle<Image>,
+    #[storage_texture(1, image_format = R32Float, access = ReadWrite)]
+    pub p0: Handle<Image>,
+    #[storage_texture(2, image_format = R32Float, access = ReadWrite)]
+    pub p1: Handle<Image>,
+}
+
+#[derive(Resource)]
+pub struct JacobiBindGroup(pub BindGroup);
 
 #[derive(Resource)]
 pub struct JacobiPipeline {
+    pub bind_group_layout: BindGroupLayout,
     pub pipeline: CachedComputePipelineId,
     pub swap_pipeline: CachedComputePipelineId,
 }
@@ -27,10 +41,7 @@ pub struct JacobiPipeline {
 impl FromWorld for JacobiPipeline {
     fn from_world(world: &mut bevy::prelude::World) -> Self {
         let render_device = world.resource();
-        let divergence_bind_group_layout = &world.resource_ref::<DivergenceBindGroupLayout>().0;
-        let pressure_bind_group_layout = &world.resource::<PressureBindGroupLayout>().0;
-        let intermediate_pressure_bind_group_layout =
-            &world.resource::<IntermediatePressureBindGroupLayout>().0;
+        let bind_group_layout = JacobiMaterial::bind_group_layout(render_device);
         let grid_label_bind_group_layout = GridLabelMaterial::bind_group_layout(render_device);
 
         let shader = world
@@ -49,11 +60,9 @@ impl FromWorld for JacobiPipeline {
         let pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: None,
             layout: vec![
-                pressure_bind_group_layout.clone(),
-                intermediate_pressure_bind_group_layout.clone(),
+                bind_group_layout.clone(),
                 uniform_bind_group_layout.clone(),
                 grid_label_bind_group_layout.clone(),
-                divergence_bind_group_layout.clone(),
             ],
             push_constant_ranges: vec![],
             shader: shader.clone(),
@@ -63,10 +72,7 @@ impl FromWorld for JacobiPipeline {
 
         let swap_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: None,
-            layout: vec![
-                pressure_bind_group_layout.clone(),
-                intermediate_pressure_bind_group_layout.clone(),
-            ],
+            layout: vec![bind_group_layout.clone()],
             push_constant_ranges: vec![],
             shader,
             shader_defs: vec![],
@@ -74,8 +80,30 @@ impl FromWorld for JacobiPipeline {
         });
 
         Self {
+            bind_group_layout,
             pipeline,
             swap_pipeline,
         }
     }
+}
+
+pub fn prepare_bind_group(
+    mut commands: Commands,
+    render_device: Res<RenderDevice>,
+    gpu_images: Res<RenderAssets<GpuImage>>,
+    pipeline: Res<JacobiPipeline>,
+    material: Res<JacobiMaterial>,
+    fallback_image: Res<FallbackImage>,
+) {
+    let bind_group = material
+        .as_bind_group(
+            &pipeline.bind_group_layout,
+            &render_device,
+            &gpu_images,
+            &fallback_image,
+        )
+        .unwrap()
+        .bind_group;
+
+    commands.insert_resource(JacobiBindGroup(bind_group));
 }
