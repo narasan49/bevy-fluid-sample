@@ -1,13 +1,11 @@
 #import bevy_fluid::fluid_uniform::SimulationUniform;
 #import bevy_fluid::coordinate::{left, right, bottom, top};
 
-@group(0) @binding(0) var div: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(1) var p_in: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(2) var p_out: texture_storage_2d<r32float, read_write>;
-
-@group(1) @binding(0) var<uniform> constants: SimulationUniform;
-
-@group(2) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
+@group(0) @binding(0) var p_in: texture_storage_2d<r32float, read_write>;
+@group(1) @binding(0) var p_out: texture_storage_2d<r32float, read_write>;
+@group(2) @binding(0) var<uniform> constants: SimulationUniform;
+@group(3) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
+@group(4) @binding(0) var div: texture_storage_2d<r32float, read_write>;
 
 @compute @workgroup_size(8, 8, 1)
 fn jacobi_iteration(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
