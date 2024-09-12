@@ -80,6 +80,7 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())
+            .add_plugins(Material2dPlugin::<FluidMaterial>::default())
             .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
             .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
             .add_systems(Startup, setup)
@@ -298,8 +299,16 @@ impl render_graph::Node for FluidNode {
                     pipeline_cache.get_compute_pipeline_state(grid_label_pipeline.init_pipeline);
                 let init_levelset_pipeline =
                     pipeline_cache.get_compute_pipeline_state(levelset_pipeline.init_pipeline);
-                match (advection_pipeline, grid_label_pipeline, init_levelset_pipeline) {
-                    (CachedPipelineState::Ok(_), CachedPipelineState::Ok(_), CachedPipelineState::Ok(_)) => {
+                match (
+                    advection_pipeline,
+                    grid_label_pipeline,
+                    init_levelset_pipeline,
+                ) {
+                    (
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
+                    ) => {
                         self.state = FluidState::Init;
                     }
                     _ => {}
@@ -403,10 +412,12 @@ impl render_graph::Node for FluidNode {
                     .unwrap();
                 let circle_collection_bind_group = &world.resource::<CircleCollectionBindGroup>().0;
                 let grid_label_bind_group = &world.resource::<GridLabelBindGroup>().0;
+                let levelset_bind_group = &world.resource::<LevelSetBindGroup>().0;
 
                 pass.set_pipeline(grid_label_pipeline);
                 pass.set_bind_group(0, grid_label_bind_group, &[]);
                 pass.set_bind_group(1, circle_collection_bind_group, &[]);
+                pass.set_bind_group(2, levelset_bind_group, &[]);
                 pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
 
                 let advection_pipeline = pipeline_cache
@@ -432,6 +443,7 @@ impl render_graph::Node for FluidNode {
                 pass.set_pipeline(add_force_pipeline);
                 pass.set_bind_group(0, local_force_bind_group, &vec![]);
                 pass.set_bind_group(2, uniform_bind_group, &[]);
+                pass.set_bind_group(3, levelset_bind_group, &[]);
                 pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
 
                 let divergence_pipeline = world.resource::<DivergencePipeline>();
@@ -483,7 +495,6 @@ impl render_graph::Node for FluidNode {
                 let levelset_pipeline = pipeline_cache
                     .get_compute_pipeline(levelset_pipeline.pipeline)
                     .unwrap();
-                let levelset_bind_group = &world.resource::<LevelSetBindGroup>().0;
                 pass.set_pipeline(&levelset_pipeline);
                 pass.set_bind_group(0, velocity_bind_group, &[]);
                 pass.set_bind_group(1, levelset_bind_group, &[]);

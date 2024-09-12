@@ -7,15 +7,21 @@ use bevy::{
 #[derive(Asset, Clone, AsBindGroup, TypePath, Debug)]
 pub struct FluidMaterial {
     #[uniform(0)]
-    pub base_color: LinearRgba,
+    pub scale: Vec3,
     #[texture(1)]
     #[sampler(2)]
-    pub velocity_texture: Option<Handle<Image>>,
+    pub velocity_texture: Handle<Image>,
 }
 
 impl Material for FluidMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/fluid_material.wgsl".into()
+    }
+}
+
+impl Material2d for FluidMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/fluid_material_2d.wgsl".into()
     }
 }
 

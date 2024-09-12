@@ -6,6 +6,7 @@
 @group(1) @binding(1) var v: texture_storage_2d<r32float, read_write>;
 
 @group(2) @binding(0) var<uniform> constants: SimulationUniform;
+@group(3) @binding(0) var levelset: texture_storage_2d<r32float, read_write>;
 
 @compute
 @workgroup_size(1, 64, 1)
@@ -16,6 +17,14 @@ fn add_force(
     let x_v = vec2<i32>(x_u.y, x_u.x);
     var n = arrayLength(&force);
     var net_force = vec2<f32>(0.0, 0.0);
+    let level_y = textureLoad(levelset, x_v).r;
+    if (level_y < 0.0) {
+        net_force.y = constants.gravity.y;
+    }
+    let level_x = textureLoad(levelset, x_u).r;
+    if (level_x < 0.0) {
+        net_force.x = constants.gravity.x;
+    }
 
     loop {
         if (n == 0) {

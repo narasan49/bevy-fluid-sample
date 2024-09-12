@@ -13,7 +13,7 @@ use bevy::{
 
 use super::{
     materials::{
-        local_force::LocalForceBindGroupLayout,
+        levelset::LevelSetBindGroupLayout, local_force::LocalForceBindGroupLayout,
         staggered_velocity::IntermediateVelocityBindGroupLayout,
     },
     uniform::SimulationUniform,
@@ -37,6 +37,7 @@ impl FromWorld for AddForcePipeline {
                 uniform_buffer::<SimulationUniform>(false),
             ),
         );
+        let levelset_bindg_group_layout = &world.resource::<LevelSetBindGroupLayout>().0;
 
         let shader = world
             .resource::<AssetServer>()
@@ -48,6 +49,7 @@ impl FromWorld for AddForcePipeline {
                 bind_group_layout.clone(),
                 intermediate_velocity_bind_group_layout.clone(),
                 uniform_bind_group_layout.clone(),
+                levelset_bindg_group_layout.clone(),
             ],
             push_constant_ranges: Vec::new(),
             shader: shader.clone(),

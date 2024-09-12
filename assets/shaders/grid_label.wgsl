@@ -9,6 +9,7 @@ struct Circle {
 
 @group(1) @binding(0) var<storage, read> circles: array<Circle>;
 
+@group(2) @binding(0) var levelset: texture_storage_2d<r32float, read_write>;
 
 @compute
 @workgroup_size(8, 8, 1)
@@ -25,6 +26,8 @@ fn update(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let x = vec2<i32>(i32(global_id.x), i32(global_id.y));
     let dim_grid = textureDimensions(grid_label);
 
+    let level = textureLoad(levelset, x).r;
+
     // ToDo: User defined boundary conditions
     if (x.x == 0 || x.x == i32(dim_grid.x) - 1 || x.y == 0 || x.y == i32(dim_grid.y) - 1) {
         textureStore(grid_label, x, vec4<u32>(2, 0, 0, 0));
@@ -32,11 +35,13 @@ fn update(@builtin(global_invocation_id) global_id: vec3<u32>) {
         textureStore(v_solid, x, vec4<f32>(0, 0, 0, 0));
         return;
     }
-    
-    let total = arrayLength(&circles);
 
+    let total = arrayLength(&circles);
+    var label = 0u;
+    if (level < 0.0) {
+        label = 1u;
+    }
     var i = 0u;
-    var label = 1u;
     var u = 0.0;
     var v = 0.0;
     loop {

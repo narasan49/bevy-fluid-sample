@@ -14,7 +14,10 @@ use bevy::{
     },
 };
 
-use super::geometry::{CircleCollectionBindGroupLayout, CircleCollectionMaterial};
+use super::{
+    geometry::{CircleCollectionBindGroupLayout, CircleCollectionMaterial},
+    materials::levelset::LevelSetBindGroupLayout,
+};
 
 #[derive(Resource, Clone, ExtractResource, AsBindGroup)]
 pub struct GridLabelMaterial {
@@ -88,6 +91,7 @@ impl FromWorld for GridLabelPipeline {
                 world.resource::<CircleCollectionBindGroupLayout>().clone()
             }
         };
+        let levelset_bind_group_layout = &world.resource::<LevelSetBindGroupLayout>().0;
 
         let shader = world
             .resource::<AssetServer>()
@@ -108,6 +112,7 @@ impl FromWorld for GridLabelPipeline {
             layout: vec![
                 grid_label_bind_group_layout.0.clone(),
                 circle_collection_bind_group_layout.0.clone(),
+                levelset_bind_group_layout.clone(),
             ],
             push_constant_ranges: vec![],
             shader: shader.clone(),

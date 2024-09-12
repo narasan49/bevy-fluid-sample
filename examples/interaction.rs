@@ -14,8 +14,11 @@ use bevy::{
 };
 
 use bevy_fluid::euler_fluid::{
-    fluid_material::VelocityMaterial,
-    materials::{local_force::LocalForceMaterial, staggered_velocity::StaggeredVelocityMaterial},
+    fluid_material::{FluidMaterial, VelocityMaterial},
+    materials::{
+        levelset::LevelSetMaterial, local_force::LocalForceMaterial,
+        staggered_velocity::StaggeredVelocityMaterial,
+    },
     uniform::SimulationUniform,
     FluidPlugin,
 };
@@ -61,7 +64,10 @@ fn main() {
     )
     .add_plugins(FluidPlugin)
     .add_systems(Startup, setup_scene)
-    .add_systems(Update, (on_advection_initialized, update))
+    .add_systems(
+        Update,
+        (on_advection_initialized, update, on_levelset_initialized),
+    )
     .add_systems(Update, mouse_motion);
 
     app.run();
@@ -76,6 +82,7 @@ fn setup_scene(mut commands: Commands) {
         dx: 1.0f32,
         dt: 0.5f32,
         rho: 1.293f32,
+        gravity: Vec2::new(0.0, 1.0)
     });
 }
 
@@ -100,11 +107,38 @@ fn on_advection_initialized(
             commands
                 .spawn(MaterialMesh2dBundle {
                     mesh: mesh.into(),
-                    transform: Transform::default().with_scale(Vec3::splat(512.0)),
+                    transform: Transform::default()
+                        .with_scale(Vec3::splat(512.0))
+                        .with_translation(Vec3::new(512.0, 0.0, 0.0)),
                     material,
                     ..default()
                 })
                 .insert(MeshMarker);
+        }
+    }
+}
+
+fn on_levelset_initialized(
+    mut commands: Commands,
+    levelset: Option<Res<LevelSetMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<FluidMaterial>>,
+) {
+    if let Some(levelset) = levelset {
+        if levelset.is_changed() {
+            info!("spawn levelset mesh");
+            let mesh = meshes.add(Rectangle::default());
+            let material = materials.add(FluidMaterial {
+                scale: Vec3::new(0.0, 0.0, 10000.0),
+                velocity_texture: levelset.levelset.clone(),
+            });
+
+            commands.spawn(MaterialMesh2dBundle {
+                mesh: mesh.into(),
+                transform: Transform::default().with_scale(Vec3::splat(512.0)),
+                material,
+                ..default()
+            });
         }
     }
 }
