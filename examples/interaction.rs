@@ -82,7 +82,7 @@ fn setup_scene(mut commands: Commands) {
         dx: 1.0f32,
         dt: 0.5f32,
         rho: 1.293f32,
-        gravity: Vec2::new(0.0, 1.0)
+        gravity: Vec2::new(0.0, 1.0),
     });
 }
 

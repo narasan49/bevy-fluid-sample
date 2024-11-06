@@ -30,6 +30,10 @@ use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUnifo
 use grid_label::{GridLabelBindGroup, GridLabelMaterial, GridLabelPipeline};
 use materials::{
     divergence::{DivergenceBindGroup, DivergenceBindGroupLayout, DivergenceMaterial},
+    jfa_seeds::{
+        JumpFloodingSeedBindGroupLayout, JumpFloodingSeedsMaterial, JumpFoodingSeedsBindGroup,
+    },
+    jump_flooding_uniform::{JumpFloodPlugin, JumpFloodingUniformBindGroups},
     levelset::{LevelSetBindGroup, LevelSetBindGroupLayout, LevelSetMaterial},
     local_force::{LocalForceBindGroup, LocalForceBindGroupLayout, LocalForceMaterial},
     prepare_bind_group::PrepareBindGroup,
@@ -43,7 +47,9 @@ use materials::{
         VelocityBindGroupLayout,
     },
 };
-use pipelines::advect_levelset::AdvectLevelsetPipeline;
+use pipelines::{
+    advect_levelset::AdvectLevelsetPipeline, recompute_levelset::RecomputeLevelsetPipeline,
+};
 use projection::{
     divergence::DivergencePipeline, jacobi_iteration::JacobiPipeline, solve::SolvePressurePipeline,
 };
@@ -79,10 +85,12 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractResourcePlugin::<CircleCollectionMaterial>::default())
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
+            .add_plugins(ExtractResourcePlugin::<JumpFloodingSeedsMaterial>::default())
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())
             .add_plugins(Material2dPlugin::<FluidMaterial>::default())
             .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
             .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
+            .add_plugins(JumpFloodPlugin)
             .add_systems(Startup, setup)
             .add_systems(Update, update_geometry);
 
@@ -129,6 +137,11 @@ impl Plugin for FluidPlugin {
             .add_systems(
                 Render,
                 geometry::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                JumpFloodingSeedBindGroupLayout::prepare_bind_group
+                    .in_set(RenderSet::PrepareBindGroups),
             );
 
         let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
@@ -159,6 +172,7 @@ impl Plugin for FluidPlugin {
         render_app.init_resource::<PressureBindGroupLayout>();
         render_app.init_resource::<IntermediatePressureBindGroupLayout>();
         render_app.init_resource::<LevelSetBindGroupLayout>();
+        render_app.init_resource::<JumpFloodingSeedBindGroupLayout>();
 
         render_app.init_resource::<AdvectionPipeline>();
         render_app.init_resource::<AddForcePipeline>();
@@ -167,6 +181,7 @@ impl Plugin for FluidPlugin {
         render_app.init_resource::<JacobiPipeline>();
         render_app.init_resource::<GridLabelPipeline>();
         render_app.init_resource::<AdvectLevelsetPipeline>();
+        render_app.init_resource::<RecomputeLevelsetPipeline>();
     }
 }
 
@@ -192,8 +207,6 @@ fn prepare_bind_group(
     );
 
     commands.insert_resource(SimulationUniformBindGroup(uniform_bind_group));
-
-    // info!("Uniform Bindgroup Created.");
 }
 
 fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
@@ -212,6 +225,7 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let u_solid = images.new_texture_storage(SIZE, TextureFormat::R32Float);
     let v_solid = images.new_texture_storage(SIZE, TextureFormat::R32Float);
     let levelset = images.new_texture_storage(SIZE, TextureFormat::R32Float);
+    let seeds = images.new_texture_storage(SIZE, TextureFormat::Rg32Float);
 
     info!("inserting fluid resources.");
     commands.insert_resource(StaggeredVelocityMaterial { u: u0, v: v0 });
@@ -238,6 +252,8 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     commands.insert_resource(LevelSetMaterial { levelset });
 
     commands.insert_resource(CircleCollectionMaterial { circles: vec![] });
+
+    commands.insert_resource(JumpFloodingSeedsMaterial { seeds });
 }
 
 fn update_geometry(
@@ -290,6 +306,7 @@ impl render_graph::Node for FluidNode {
         let grid_label_pipeline = world.resource::<GridLabelPipeline>();
         let levelset_pipeline = world.resource::<AdvectLevelsetPipeline>();
         let pipeline_cache = world.resource::<PipelineCache>();
+        let recompute_levelset_pipeline = world.resource::<RecomputeLevelsetPipeline>();
 
         match self.state {
             FluidState::Loading => {
@@ -331,6 +348,12 @@ impl render_graph::Node for FluidNode {
                     pipeline_cache.get_compute_pipeline_state(grid_label_pipeline.update_pipeline);
                 let advect_levelset_pipeline =
                     pipeline_cache.get_compute_pipeline_state(levelset_pipeline.pipeline);
+                let initialize_seeds_pipeline = pipeline_cache
+                    .get_compute_pipeline_state(recompute_levelset_pipeline.initialize_pipeline);
+                let jump_flooding_pipeline = pipeline_cache
+                    .get_compute_pipeline_state(recompute_levelset_pipeline.jump_flood_pipeline);
+                let update_sdf_pipeline = pipeline_cache
+                    .get_compute_pipeline_state(recompute_levelset_pipeline.sdf_pipeline);
                 match (
                     advection_pipeline,
                     add_force_pipeline,
@@ -340,8 +363,14 @@ impl render_graph::Node for FluidNode {
                     divergence_pipeline,
                     grid_label_pipeline,
                     advect_levelset_pipeline,
+                    initialize_seeds_pipeline,
+                    jump_flooding_pipeline,
+                    update_sdf_pipeline,
                 ) {
                     (
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
+                        CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
                         CachedPipelineState::Ok(_),
@@ -367,6 +396,7 @@ impl render_graph::Node for FluidNode {
         let advection_pipeline = world.resource::<AdvectionPipeline>();
         let grid_label_pipeline = world.resource::<GridLabelPipeline>();
         let levelset_pipeline = world.resource::<AdvectLevelsetPipeline>();
+        let recompute_levelset_pipeline = world.resource::<RecomputeLevelsetPipeline>();
         let pipeline_cache = world.resource::<PipelineCache>();
 
         let uniform_bind_group = &world.resource::<SimulationUniformBindGroup>().0;
@@ -472,7 +502,7 @@ impl render_graph::Node for FluidNode {
                 pass.set_bind_group(2, uniform_bind_group, &[]);
                 pass.set_bind_group(3, grid_label_bind_group, &[]);
                 pass.set_bind_group(4, divergence_bind_group, &[]);
-                for _ in 0..30 {
+                for _ in 0..10 {
                     pass.set_pipeline(&jacobi_pipeline);
                     pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
                     pass.set_pipeline(&swap_pipeline);
@@ -491,6 +521,35 @@ impl render_graph::Node for FluidNode {
                 pass.set_bind_group(3, uniform_bind_group, &[]);
                 pass.set_bind_group(4, grid_label_bind_group, &[]);
                 pass.dispatch_workgroups(SIZE.0 + 1, SIZE.1 / WORKGROUP_SIZE / WORKGROUP_SIZE, 1);
+
+                pass.set_bind_group(2, uniform_bind_group, &[]);
+
+                let initialize_seeds_pipeline = pipeline_cache
+                    .get_compute_pipeline(recompute_levelset_pipeline.initialize_pipeline)
+                    .unwrap();
+                let seeds_bind_group = &world.resource::<JumpFoodingSeedsBindGroup>().0;
+                pass.set_pipeline(&initialize_seeds_pipeline);
+                pass.set_bind_group(0, &seeds_bind_group, &[]);
+                pass.set_bind_group(1, &levelset_bind_group, &[]);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+
+                let jump_flood_pipeline = pipeline_cache
+                    .get_compute_pipeline(recompute_levelset_pipeline.jump_flood_pipeline)
+                    .unwrap();
+                let jump_flood_uniform_bind_groups =
+                    &world.resource::<JumpFloodingUniformBindGroups>();
+                pass.set_pipeline(&jump_flood_pipeline);
+                for uniform_bind_group in &jump_flood_uniform_bind_groups.bind_groups {
+                    pass.set_bind_group(1, &uniform_bind_group, &[]);
+                    pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
+                }
+
+                let sdf_pipeline = pipeline_cache
+                    .get_compute_pipeline(recompute_levelset_pipeline.sdf_pipeline)
+                    .unwrap();
+                pass.set_pipeline(&sdf_pipeline);
+                pass.set_bind_group(1, &levelset_bind_group, &[]);
+                pass.dispatch_workgroups(SIZE.0 / WORKGROUP_SIZE, SIZE.1 / WORKGROUP_SIZE, 1);
 
                 let levelset_pipeline = pipeline_cache
                     .get_compute_pipeline(levelset_pipeline.pipeline)

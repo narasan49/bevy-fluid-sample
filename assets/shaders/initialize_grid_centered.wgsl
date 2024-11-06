@@ -6,7 +6,7 @@ fn initialize(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {
     let x = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
-    let zero_contour_height  = 256.0;
+    let zero_contour_height  = 100.0;
     let value = zero_contour_height - f32(invocation_id.y);
     textureStore(levelset, x, vec4<f32>(value, 0.0, 0.0, 0.0));
 }

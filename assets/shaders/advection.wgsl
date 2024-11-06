@@ -38,7 +38,7 @@ fn advection(
     let label_u = textureLoad(grid_label, x_u - vec2<i32>(0, 1)).r;
     let label_uplus = textureLoad(grid_label, x_u).r;
     // At this point, we don't update the solid velocity. Solid velocity is taken into account in the divergence and pressure-update steps.
-    if (label_u == 0 || label_uplus == 0) {
+    if (label_u == 0) {
         textureStore(u_out, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
     } else {
         let backtraced_x_u: vec2<f32> = runge_kutta(u_in, v_in, x_u, constants.dt);
@@ -53,7 +53,7 @@ fn advection(
 
     let label_v = textureLoad(grid_label, x_v - vec2<i32>(0, 1)).r;
     let label_vplus = textureLoad(grid_label, x_v).r;
-    if (label_v == 0 || label_vplus == 0) {
+    if (label_v == 0) {
         textureStore(v_out, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));
     } else {
         let backtraced_x_v: vec2<f32> = runge_kutta(u_in, v_in, x_v, constants.dt);
