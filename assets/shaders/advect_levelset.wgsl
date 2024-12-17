@@ -16,7 +16,7 @@ fn advect_levelset(
     let label = textureLoad(levelset, x).r;
 
     let dt = constants.dt;
-    let x_new = runge_kutta(u, v, x, dt);
+    let x_new = runge_kutta(u, v, vec2<f32>(x), dt);
     let new_label = interpolate2d_grid_center(levelset, x_new);
     textureStore(levelset, x, vec4<f32>(new_label, 0.0, 0.0, 0.0));
 }
@@ -24,14 +24,14 @@ fn advect_levelset(
 fn runge_kutta(
     u: texture_storage_2d<r32float, read_write>,
     v: texture_storage_2d<r32float, read_write>,
-    x: vec2<i32>,
+    x: vec2<f32>,
     dt: f32,
 ) -> vec2<f32> {
-    let velocity = vec2<f32>(u_at(u, vec2<f32>(x)), v_at(v, vec2<f32>(x)));
-    let x_mid = vec2<f32>(x) - vec2<f32>(0.5 * dt) * velocity;
+    let velocity = vec2<f32>(u_at(u, x), v_at(v, x));
+    let x_mid = x - vec2<f32>(0.5 * dt) * velocity;
     let velocity_mid = vec2<f32>(u_at(u, x_mid), v_at(v, x_mid));
 
-    return vec2<f32>(x) - dt * velocity_mid;
+    return x - dt * velocity_mid;
 }
 
 fn u_at(

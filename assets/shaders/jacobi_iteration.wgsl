@@ -11,7 +11,7 @@
 fn jacobi_iteration(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
     let x = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
     let label = textureLoad(grid_label, x).r;
-    if (label == 2) {
+    if (label == 2 || label == 0) {
         textureStore(p_out, x, vec4<f32>(0.0, 0.0, 0.0, 0.0));
         return;
     }
