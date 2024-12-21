@@ -1,13 +1,13 @@
 pub mod add_force;
 pub mod advection;
+pub mod definition;
+pub mod fluid_bind_group;
 pub mod fluid_material;
 pub mod geometry;
 pub mod grid_label;
 pub mod projection;
-pub mod uniform;
-pub mod definition;
 pub mod setup;
-pub mod fluid_bind_group;
+pub mod uniform;
 
 use add_force::{AddForceBindGroup, AddForceMaterial, AddForcePipeline};
 use advection::{AdvectionBindGroup, AdvectionMaterial, AdvectionPipeline};

@@ -1,6 +1,20 @@
 use std::borrow::Cow;
 
-use bevy::{prelude::*, render::{extract_component::{ComponentUniforms, DynamicUniformIndex}, extract_resource::ExtractResource, render_asset::RenderAssets, render_resource::{binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupEntries, BindGroupLayout, BindGroupLayoutEntries, CachedComputePipelineId, ComputePipelineDescriptor, PipelineCache, ShaderStages}, renderer::RenderDevice, texture::{CachedTexture, FallbackImage, GpuImage}}};
+use bevy::{
+    prelude::*,
+    render::{
+        extract_component::{ComponentUniforms, DynamicUniformIndex},
+        extract_resource::ExtractResource,
+        render_asset::RenderAssets,
+        render_resource::{
+            binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupLayout,
+            BindGroupLayoutEntries, CachedComputePipelineId, ComputePipelineDescriptor,
+            PipelineCache, ShaderStages,
+        },
+        renderer::RenderDevice,
+        texture::{FallbackImage, GpuImage},
+    },
+};
 
 use super::{advection::AdvectionTextures, uniform::SimulationUniform};
 
@@ -14,11 +28,11 @@ impl FromWorld for FluidPipelines {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.resource::<RenderDevice>();
         let pipeline_cache = world.resource::<PipelineCache>();
-        
+
         let uniform_bind_group_layout = render_device.create_bind_group_layout(
             Some("Create uniform bind group layout"),
             &BindGroupLayoutEntries::single(
-                ShaderStages::COMPUTE, 
+                ShaderStages::COMPUTE,
                 uniform_buffer::<SimulationUniform>(true),
             ),
         );
@@ -62,19 +76,26 @@ pub fn prepare_fluid_bind_groups(
     mut commands: Commands,
     pilelines: Res<FluidPipelines>,
     simulation_uniform: Res<ComponentUniforms<SimulationUniform>>,
-    query: Query<(Entity, &AdvectionTextures, &DynamicUniformIndex<SimulationUniform>)>,
+    query: Query<(
+        Entity,
+        &AdvectionTextures,
+        &DynamicUniformIndex<SimulationUniform>,
+    )>,
     render_device: Res<RenderDevice>,
     fallback_image: Res<FallbackImage>,
     gpu_images: Res<RenderAssets<GpuImage>>,
 ) {
-    for (
-        entity,
-        advection_textures,
-        simulation_uniform_index
-    ) in &query {
+    for (entity, advection_textures, simulation_uniform_index) in &query {
         let simulation_uniform = simulation_uniform.uniforms();
-        let advection_bind_group = advection_textures.as_bind_group(&pilelines.advection_bind_group_layout, &render_device, &gpu_images, &fallback_image).unwrap().bind_group;
-        
+        let advection_bind_group = advection_textures
+            .as_bind_group(
+                &pilelines.advection_bind_group_layout,
+                &render_device,
+                &gpu_images,
+                &fallback_image,
+            )
+            .unwrap()
+            .bind_group;
 
         commands.entity(entity).insert(FluidBindGroups {
             advection_bind_group,

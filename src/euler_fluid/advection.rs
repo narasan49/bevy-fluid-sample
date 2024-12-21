@@ -3,11 +3,16 @@ use std::borrow::Cow;
 use bevy::{
     prelude::*,
     render::{
-        extract_component::ExtractComponent, extract_resource::ExtractResource, render_asset::RenderAssets, render_resource::{
+        extract_component::ExtractComponent,
+        extract_resource::ExtractResource,
+        render_asset::RenderAssets,
+        render_resource::{
             binding_types::uniform_buffer, AsBindGroup, BindGroup, BindGroupLayout,
             BindGroupLayoutEntries, CachedComputePipelineId, ComputePipelineDescriptor,
             PipelineCache, ShaderStages,
-        }, renderer::RenderDevice, texture::{FallbackImage, GpuImage}
+        },
+        renderer::RenderDevice,
+        texture::{FallbackImage, GpuImage},
     },
 };
 
