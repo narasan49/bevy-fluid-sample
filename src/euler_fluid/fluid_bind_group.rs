@@ -16,7 +16,7 @@ use bevy::{
     },
 };
 
-use super::{advection::AdvectionTextures, uniform::SimulationUniform};
+use super::{definition::AdvectionTextures, uniform::SimulationUniform};
 
 #[derive(Resource)]
 pub struct FluidPipelines {

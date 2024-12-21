@@ -2,8 +2,7 @@ use bevy::{prelude::*, render::render_resource::TextureFormat};
 
 use crate::{
     euler_fluid::{
-        advection::AdvectionTextures,
-        definition::{SimulationInterval, SimulationTextureBundle},
+        definition::{AdvectionTextures, SimulationInterval, SimulationTextureBundle},
         uniform::SimulationUniform,
     },
     texture::NewTexture,

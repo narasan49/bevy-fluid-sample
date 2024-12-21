@@ -3,7 +3,6 @@ use std::borrow::Cow;
 use bevy::{
     prelude::*,
     render::{
-        extract_component::ExtractComponent,
         extract_resource::ExtractResource,
         render_asset::RenderAssets,
         render_resource::{
@@ -37,24 +36,6 @@ pub fn prepare_bind_group(
         .bind_group;
 
     commands.insert_resource(AdvectionBindGroup(bind_group));
-}
-
-#[derive(Component, Clone, ExtractComponent, AsBindGroup)]
-pub struct AdvectionTextures {
-    #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
-    pub u0: Handle<Image>,
-    #[storage_texture(1, image_format = R32Float, access = ReadWrite)]
-    pub u1: Handle<Image>,
-    #[storage_texture(2, image_format = R32Float, access = ReadWrite)]
-    pub v0: Handle<Image>,
-    #[storage_texture(3, image_format = R32Float, access = ReadWrite)]
-    pub v1: Handle<Image>,
-    #[storage_texture(4, image_format = R32Uint, access = ReadWrite)]
-    pub grid_label: Handle<Image>,
-    #[storage_texture(5, image_format = R32Float, access = ReadWrite)]
-    pub u_solid: Handle<Image>,
-    #[storage_texture(6, image_format = R32Float, access = ReadWrite)]
-    pub v_solid: Handle<Image>,
 }
 
 #[derive(Resource, Clone, ExtractResource, AsBindGroup)]
