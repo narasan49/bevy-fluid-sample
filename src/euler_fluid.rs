@@ -5,6 +5,9 @@ pub mod geometry;
 pub mod grid_label;
 pub mod projection;
 pub mod uniform;
+pub mod definition;
+pub mod setup;
+pub mod fluid_bind_group;
 
 use add_force::{AddForceBindGroup, AddForceMaterial, AddForcePipeline};
 use advection::{AdvectionBindGroup, AdvectionMaterial, AdvectionPipeline};
@@ -31,6 +34,7 @@ use projection::{
     jacobi_iteration::{self, JacobiBindGroup, JacobiMaterial, JacobiPipeline},
     solve::{self, SolvePressureBindGroup, SolvePressureMaterial, SolvePressurePipeline},
 };
+use setup::watch_fluid_compoent;
 use uniform::{SimulationUniform, SimulationUniformBindGroup};
 
 use crate::texture::NewTexture;
@@ -65,7 +69,8 @@ impl Plugin for FluidPlugin {
             .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
             .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
             .add_systems(Startup, setup)
-            .add_systems(Update, update_geometry);
+            .add_systems(Update, update_geometry)
+            .add_systems(Update, watch_fluid_compoent);
 
         let render_app = app.sub_app_mut(RenderApp);
         render_app
