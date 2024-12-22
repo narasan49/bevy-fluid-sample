@@ -5,6 +5,7 @@ pub mod fluid_bind_group;
 pub mod fluid_material;
 pub mod geometry;
 pub mod grid_label;
+pub mod node;
 pub mod projection;
 pub mod setup;
 pub mod uniform;
@@ -26,9 +27,12 @@ use bevy::{
     },
     sprite::Material2dPlugin,
 };
+use definition::{AddForceTextures, AdvectionTextures};
+use fluid_bind_group::FluidPipelines;
 use fluid_material::VelocityMaterial;
 use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUniform, Velocity};
 use grid_label::{GridLabelBindGroup, GridLabelMaterial, GridLabelPipeline};
+use node::EulerFluidNode;
 use projection::{
     divergence::{self, DivergenceBindGroup, DivergenceMaterial, DivergencePipeline},
     jacobi_iteration::{self, JacobiBindGroup, JacobiMaterial, JacobiPipeline},
@@ -63,6 +67,8 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractResourcePlugin::<JacobiMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<GridLabelMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<CircleCollectionMaterial>::default())
+            .add_plugins(ExtractComponentPlugin::<AdvectionTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<AddForceTextures>::default())
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())
@@ -105,11 +111,22 @@ impl Plugin for FluidPlugin {
             .add_systems(
                 Render,
                 geometry::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                fluid_bind_group::prepare_fluid_bind_groups.in_set(RenderSet::PrepareBindGroups),
             );
 
-        let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
+        let mut world = render_app.world_mut();
+        let euler_fluid_node = EulerFluidNode::new(&mut world);
+
+        let mut render_graph = world.resource_mut::<RenderGraph>();
         render_graph.add_node(FluidLabel, FluidNode::default());
         render_graph.add_node_edge(FluidLabel, CameraDriverLabel);
+
+        // node for fluid component
+        render_graph.add_node(FluidLabel, euler_fluid_node);
+        // render_graph.add_node_edge(FluidLabel, CameraDriverLabel);
 
         load_internal_asset!(
             app,
@@ -134,6 +151,8 @@ impl Plugin for FluidPlugin {
         render_app.init_resource::<DivergencePipeline>();
         render_app.init_resource::<JacobiPipeline>();
         render_app.init_resource::<GridLabelPipeline>();
+
+        render_app.init_resource::<FluidPipelines>();
     }
 }
 

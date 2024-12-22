@@ -2,7 +2,9 @@ use bevy::{prelude::*, render::render_resource::TextureFormat};
 
 use crate::{
     euler_fluid::{
-        definition::{AdvectionTextures, SimulationInterval, SimulationTextureBundle},
+        definition::{
+            AddForceTextures, AdvectionTextures, SimulationInterval, SimulationTextureBundle,
+        },
         uniform::SimulationUniform,
     },
     texture::NewTexture,
@@ -46,6 +48,11 @@ pub(crate) fn watch_fluid_compoent(
             v_solid: v_solid.clone(),
         };
 
+        let add_force_textures = AddForceTextures {
+            u: u1.clone(),
+            v: v1.clone(),
+        };
+
         let dt = match settings.dt {
             SimulationInterval::Fixed(dt) => dt,
             SimulationInterval::Dynamic => 0.5f32,
@@ -59,7 +66,10 @@ pub(crate) fn watch_fluid_compoent(
 
         commands
             .entity(entity)
-            .insert(SimulationTextureBundle { advection_textures })
+            .insert(SimulationTextureBundle {
+                advection_textures,
+                add_force_textures,
+            })
             .insert(uniform);
     }
 }
