@@ -16,7 +16,7 @@ use bevy::{
 };
 
 use super::{
-    definition::{GridCenterTextures, VelocityTextures, LocalForces},
+    definition::{GridCenterTextures, LocalForces, VelocityTextures},
     uniform::SimulationUniform,
 };
 

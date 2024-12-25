@@ -1,9 +1,6 @@
 use bevy::{
     prelude::*,
-    render::{
-        extract_component::ExtractComponent, extract_resource::ExtractResource,
-        render_resource::AsBindGroup,
-    },
+    render::{extract_component::ExtractComponent, render_resource::AsBindGroup},
 };
 
 pub enum SimulationInterval {
@@ -47,7 +44,7 @@ pub struct GridCenterTextures {
     pub v_solid: Handle<Image>,
 }
 
-#[derive(Resource, Clone, ExtractResource, AsBindGroup)]
+#[derive(Component, Clone, ExtractComponent, AsBindGroup)]
 pub struct LocalForces {
     #[storage(0, read_only, visibility(compute))]
     pub force: Vec<Vec2>,
@@ -56,7 +53,8 @@ pub struct LocalForces {
 }
 
 #[derive(Bundle)]
-pub struct SimulationTextureBundle {
+pub struct FluidSimulationBundle {
     pub velocity_textures: VelocityTextures,
     pub grid_center_textures: GridCenterTextures,
+    pub local_forces: LocalForces,
 }

@@ -3,7 +3,8 @@ use bevy::{prelude::*, render::render_resource::TextureFormat};
 use crate::{
     euler_fluid::{
         definition::{
-            GridCenterTextures, VelocityTextures, SimulationInterval, SimulationTextureBundle,
+            FluidSimulationBundle, GridCenterTextures, LocalForces, SimulationInterval,
+            VelocityTextures,
         },
         uniform::SimulationUniform,
     },
@@ -38,12 +39,7 @@ pub(crate) fn watch_fluid_compoent(
         let u_solid = images.new_texture_storage(size, TextureFormat::R32Float);
         let v_solid = images.new_texture_storage(size, TextureFormat::R32Float);
 
-        let velocity_textures = VelocityTextures {
-            u0,
-            v0,
-            u1,
-            v1,
-        };
+        let velocity_textures = VelocityTextures { u0, v0, u1, v1 };
 
         let grid_center_textures = GridCenterTextures {
             p0,
@@ -65,11 +61,17 @@ pub(crate) fn watch_fluid_compoent(
             rho: settings.rho,
         };
 
+        let local_forces = LocalForces {
+            force: vec![],
+            position: vec![],
+        };
+
         commands
             .entity(entity)
-            .insert(SimulationTextureBundle {
+            .insert(FluidSimulationBundle {
                 velocity_textures,
                 grid_center_textures,
+                local_forces,
             })
             .insert(uniform);
     }
