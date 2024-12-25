@@ -20,29 +20,31 @@ pub struct FluidSettings {
 }
 
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]
-pub struct AdvectionTextures {
+pub struct VelocityTextures {
     #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
     pub u0: Handle<Image>,
     #[storage_texture(1, image_format = R32Float, access = ReadWrite)]
-    pub u1: Handle<Image>,
-    #[storage_texture(2, image_format = R32Float, access = ReadWrite)]
     pub v0: Handle<Image>,
+    #[storage_texture(2, image_format = R32Float, access = ReadWrite)]
+    pub u1: Handle<Image>,
     #[storage_texture(3, image_format = R32Float, access = ReadWrite)]
     pub v1: Handle<Image>,
-    #[storage_texture(4, image_format = R32Uint, access = ReadWrite)]
-    pub grid_label: Handle<Image>,
-    #[storage_texture(5, image_format = R32Float, access = ReadWrite)]
-    pub u_solid: Handle<Image>,
-    #[storage_texture(6, image_format = R32Float, access = ReadWrite)]
-    pub v_solid: Handle<Image>,
 }
 
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]
-pub struct AddForceTextures {
+pub struct GridCenterTextures {
     #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
-    pub u: Handle<Image>,
+    pub p0: Handle<Image>,
     #[storage_texture(1, image_format = R32Float, access = ReadWrite)]
-    pub v: Handle<Image>,
+    pub p1: Handle<Image>,
+    #[storage_texture(2, image_format = R32Float, access = ReadWrite)]
+    pub div: Handle<Image>,
+    #[storage_texture(3, image_format = R32Uint, access = ReadWrite)]
+    pub grid_label: Handle<Image>,
+    #[storage_texture(4, image_format = R32Float, access = ReadWrite)]
+    pub u_solid: Handle<Image>,
+    #[storage_texture(5, image_format = R32Float, access = ReadWrite)]
+    pub v_solid: Handle<Image>,
 }
 
 #[derive(Resource, Clone, ExtractResource, AsBindGroup)]
@@ -55,6 +57,6 @@ pub struct LocalForces {
 
 #[derive(Bundle)]
 pub struct SimulationTextureBundle {
-    pub advection_textures: AdvectionTextures,
-    pub add_force_textures: AddForceTextures,
+    pub velocity_textures: VelocityTextures,
+    pub grid_center_textures: GridCenterTextures,
 }

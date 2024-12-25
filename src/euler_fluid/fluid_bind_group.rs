@@ -16,7 +16,7 @@ use bevy::{
 };
 
 use super::{
-    definition::{AddForceTextures, AdvectionTextures, LocalForces},
+    definition::{GridCenterTextures, VelocityTextures, LocalForces},
     uniform::SimulationUniform,
 };
 
@@ -41,7 +41,7 @@ impl FromWorld for FluidPipelines {
                 uniform_buffer::<SimulationUniform>(true),
             ),
         );
-        let advection_bind_group_layout = AdvectionTextures::bind_group_layout(render_device);
+        let advection_bind_group_layout = VelocityTextures::bind_group_layout(render_device);
 
         let advection_shader = asset_server.load("shaders/advection.wgsl");
         let advection_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
@@ -57,7 +57,7 @@ impl FromWorld for FluidPipelines {
         });
 
         let local_forces_bind_group_layout = LocalForces::bind_group_layout(render_device);
-        let add_force_bind_group_layout = AddForceTextures::bind_group_layout(render_device);
+        let add_force_bind_group_layout = GridCenterTextures::bind_group_layout(render_device);
         let add_force_shader = asset_server.load("shaders/add_force.wgsl");
         let add_force_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: Some(Cow::from("Queue AddForcePipeline")),
@@ -94,8 +94,8 @@ pub fn prepare_fluid_bind_groups(
     simulation_uniform: Res<ComponentUniforms<SimulationUniform>>,
     query: Query<(
         Entity,
-        &AdvectionTextures,
-        &AddForceTextures,
+        &VelocityTextures,
+        &GridCenterTextures,
         &DynamicUniformIndex<SimulationUniform>,
     )>,
     render_device: Res<RenderDevice>,

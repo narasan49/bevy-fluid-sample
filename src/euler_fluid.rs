@@ -27,7 +27,7 @@ use bevy::{
     },
     sprite::Material2dPlugin,
 };
-use definition::{AddForceTextures, AdvectionTextures};
+use definition::{GridCenterTextures, VelocityTextures};
 use fluid_bind_group::FluidPipelines;
 use fluid_material::VelocityMaterial;
 use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUniform, Velocity};
@@ -67,8 +67,8 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractResourcePlugin::<JacobiMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<GridLabelMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<CircleCollectionMaterial>::default())
-            .add_plugins(ExtractComponentPlugin::<AdvectionTextures>::default())
-            .add_plugins(ExtractComponentPlugin::<AddForceTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<VelocityTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<GridCenterTextures>::default())
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())

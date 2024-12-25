@@ -3,7 +3,7 @@ use bevy::{prelude::*, render::render_resource::TextureFormat};
 use crate::{
     euler_fluid::{
         definition::{
-            AddForceTextures, AdvectionTextures, SimulationInterval, SimulationTextureBundle,
+            GridCenterTextures, VelocityTextures, SimulationInterval, SimulationTextureBundle,
         },
         uniform::SimulationUniform,
     },
@@ -38,19 +38,20 @@ pub(crate) fn watch_fluid_compoent(
         let u_solid = images.new_texture_storage(size, TextureFormat::R32Float);
         let v_solid = images.new_texture_storage(size, TextureFormat::R32Float);
 
-        let advection_textures = AdvectionTextures {
-            u0: u0.clone(),
-            u1: u1.clone(),
-            v0: v0.clone(),
-            v1: v1.clone(),
-            grid_label: grid_label.clone(),
-            u_solid: u_solid.clone(),
-            v_solid: v_solid.clone(),
+        let velocity_textures = VelocityTextures {
+            u0,
+            v0,
+            u1,
+            v1,
         };
 
-        let add_force_textures = AddForceTextures {
-            u: u1.clone(),
-            v: v1.clone(),
+        let grid_center_textures = GridCenterTextures {
+            p0,
+            p1,
+            div,
+            grid_label,
+            u_solid,
+            v_solid,
         };
 
         let dt = match settings.dt {
@@ -67,8 +68,8 @@ pub(crate) fn watch_fluid_compoent(
         commands
             .entity(entity)
             .insert(SimulationTextureBundle {
-                advection_textures,
-                add_force_textures,
+                velocity_textures,
+                grid_center_textures,
             })
             .insert(uniform);
     }
