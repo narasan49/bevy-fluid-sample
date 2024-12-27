@@ -75,44 +75,44 @@ impl Plugin for FluidPlugin {
             .add_plugins(MaterialPlugin::<FluidMaterial>::default())
             .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
             .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
-            .add_systems(Startup, setup)
-            .add_systems(Update, update_geometry)
+            // .add_systems(Startup, setup)
+            // .add_systems(Update, update_geometry)
             .add_systems(Update, watch_fluid_compoent);
 
         let render_app = app.sub_app_mut(RenderApp);
         render_app
-            .add_systems(
-                Render,
-                prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
-            )
-            .add_systems(
-                Render,
-                add_force::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
-            )
-            .add_systems(
-                Render,
-                advection::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
-            )
-            .add_systems(
-                Render,
-                divergence::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
-            )
-            .add_systems(
-                Render,
-                solve::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
-            )
-            .add_systems(
-                Render,
-                jacobi_iteration::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
-            )
-            .add_systems(
-                Render,
-                grid_label::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
-            )
-            .add_systems(
-                Render,
-                geometry::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
-            )
+            // .add_systems(
+            //     Render,
+            //     prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            // )
+            // .add_systems(
+            //     Render,
+            //     add_force::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            // )
+            // .add_systems(
+            //     Render,
+            //     advection::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            // )
+            // .add_systems(
+            //     Render,
+            //     divergence::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            // )
+            // .add_systems(
+            //     Render,
+            //     solve::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            // )
+            // .add_systems(
+            //     Render,
+            //     jacobi_iteration::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            // )
+            // .add_systems(
+            //     Render,
+            //     grid_label::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            // )
+            // .add_systems(
+            //     Render,
+            //     geometry::prepare_bind_group.in_set(RenderSet::PrepareBindGroups),
+            // )
             .add_systems(
                 Render,
                 fluid_bind_group::prepare_fluid_bind_groups.in_set(RenderSet::PrepareBindGroups),
@@ -122,11 +122,11 @@ impl Plugin for FluidPlugin {
         let euler_fluid_node = EulerFluidNode::new(&mut world);
 
         let mut render_graph = world.resource_mut::<RenderGraph>();
-        render_graph.add_node(FluidLabel, FluidNode::default());
+        // render_graph.add_node(FluidLabel, FluidNode::default());
+        render_graph.add_node(FluidLabel, euler_fluid_node);
         render_graph.add_node_edge(FluidLabel, CameraDriverLabel);
 
         // node for fluid component
-        render_graph.add_node(FluidLabel, euler_fluid_node);
         // render_graph.add_node_edge(FluidLabel, CameraDriverLabel);
 
         load_internal_asset!(
@@ -146,12 +146,12 @@ impl Plugin for FluidPlugin {
 
     fn finish(&self, app: &mut App) {
         let render_app = app.sub_app_mut(RenderApp);
-        render_app.init_resource::<AdvectionPipeline>();
-        render_app.init_resource::<AddForcePipeline>();
-        render_app.init_resource::<SolvePressurePipeline>();
-        render_app.init_resource::<DivergencePipeline>();
-        render_app.init_resource::<JacobiPipeline>();
-        render_app.init_resource::<GridLabelPipeline>();
+        // render_app.init_resource::<AdvectionPipeline>();
+        // render_app.init_resource::<AddForcePipeline>();
+        // render_app.init_resource::<SolvePressurePipeline>();
+        // render_app.init_resource::<DivergencePipeline>();
+        // render_app.init_resource::<JacobiPipeline>();
+        // render_app.init_resource::<GridLabelPipeline>();
 
         render_app.init_resource::<FluidPipelines>();
     }
