@@ -7,9 +7,9 @@
 
 @group(1) @binding(0) var<uniform> constants: SimulationUniform;
 
-@group(2) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
-@group(2) @binding(1) var u_solid: texture_storage_2d<r32float, read_write>;
-@group(2) @binding(2) var v_solid: texture_storage_2d<r32float, read_write>;
+@group(2) @binding(3) var grid_label: texture_storage_2d<r32uint, read_write>;
+@group(2) @binding(4) var u_solid: texture_storage_2d<r32float, read_write>;
+@group(2) @binding(5) var v_solid: texture_storage_2d<r32float, read_write>;
 
 // ToDo: Move to a separate file
 @compute @workgroup_size(1, 64, 1)
