@@ -66,14 +66,33 @@ fn setup_scene(mut commands: Commands) {
         .spawn(Camera2dBundle::default())
         .insert(Name::new("Camera"));
 
+    let size = 512u32;
+
     commands
         .spawn(FluidSettings {
             dx: 1.0f32,
             dt: SimulationInterval::Fixed(0.5f32),
             rho: 1.293f32,
-            size: (512, 512),
+            size: (size, size),
         })
-        .insert(Transform::default().with_scale(Vec3::splat(512.0)));
+        .insert(
+            Transform::default()
+                .with_scale(Vec3::splat(size as f32))
+                .with_translation(Vec3::ZERO.with_x(size as f32 * -0.51)),
+        );
+
+    commands
+        .spawn(FluidSettings {
+            dx: 1.0f32,
+            dt: SimulationInterval::Fixed(0.5f32),
+            rho: 1.293f32,
+            size: (size, size),
+        })
+        .insert(
+            Transform::default()
+                .with_scale(Vec3::splat(size as f32))
+                .with_translation(Vec3::ZERO.with_x(size as f32 * 0.51)),
+        );
 }
 
 fn on_fluid_setup(
@@ -117,9 +136,9 @@ fn mouse_motion(
                 .map(|mouse| mouse.delta)
                 .collect::<Vec<_>>();
 
-            for (mut local_forces, fluid_settings, _transform) in q_fluid.iter_mut() {
+            for (mut local_forces, fluid_settings, transform) in q_fluid.iter_mut() {
                 let position = screen_to_mesh2d_coordinate(
-                    cursor_position,
+                    cursor_position - transform.translation.xy(),
                     window,
                     q_camera.single(),
                     Vec2::new(fluid_settings.size.0 as f32, fluid_settings.size.1 as f32),
@@ -137,12 +156,12 @@ fn mouse_motion(
         .iter()
         .map(|touch| touch.delta())
         .collect::<Vec<_>>();
-    for (mut local_forces, fluid_settings, _transform) in q_fluid.iter_mut() {
+    for (mut local_forces, fluid_settings, transform) in q_fluid.iter_mut() {
         let touch_position = touches
             .iter()
             .map(|touch| {
                 screen_to_mesh2d_coordinate(
-                    touch.position(),
+                    touch.position() - transform.translation.xy(),
                     q_window.single(),
                     q_camera.single(),
                     Vec2::new(fluid_settings.size.0 as f32, fluid_settings.size.1 as f32),

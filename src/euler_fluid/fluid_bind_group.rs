@@ -266,7 +266,6 @@ pub fn prepare_fluid_bind_groups(
             .unwrap()
             .bind_group;
 
-        info!("Inserting FluidBindGroups into entity ({:?}).", entity);
         commands.entity(entity).insert(FluidBindGroups {
             velocity_bind_group,
             grid_center_bind_group,

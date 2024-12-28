@@ -67,7 +67,8 @@ impl render_graph::Node for EulerFluidNode {
                     pipeline_cache.get_compute_pipeline_state(pipelines.add_force_pipeline),
                     pipeline_cache.get_compute_pipeline_state(pipelines.divergence_pipeline),
                     pipeline_cache.get_compute_pipeline_state(pipelines.jacobi_iteration_pipeline),
-                    pipeline_cache.get_compute_pipeline_state(pipelines.jacobi_iteration_reverse_pipeline),
+                    pipeline_cache
+                        .get_compute_pipeline_state(pipelines.jacobi_iteration_reverse_pipeline),
                     pipeline_cache.get_compute_pipeline_state(pipelines.solve_velocity_pipeline),
                 ) {
                     self.state = State::Update;
