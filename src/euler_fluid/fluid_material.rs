@@ -5,21 +5,6 @@ use bevy::{
 };
 
 #[derive(Asset, Clone, AsBindGroup, TypePath, Debug)]
-pub struct FluidMaterial {
-    #[uniform(0)]
-    pub base_color: LinearRgba,
-    #[texture(1)]
-    #[sampler(2)]
-    pub velocity_texture: Option<Handle<Image>>,
-}
-
-impl Material for FluidMaterial {
-    fn fragment_shader() -> ShaderRef {
-        "shaders/fluid_material.wgsl".into()
-    }
-}
-
-#[derive(Asset, Clone, AsBindGroup, TypePath, Debug)]
 pub struct VelocityMaterial {
     #[uniform(0)]
     pub offset: f32,

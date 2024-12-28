@@ -72,9 +72,7 @@ pub struct Obstacles {
 
 impl FromWorld for Obstacles {
     fn from_world(_world: &mut World) -> Self {
-        Self {
-            circles: vec![],
-        }
+        Self { circles: vec![] }
     }
 }
 

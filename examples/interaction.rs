@@ -16,7 +16,6 @@ use bevy::{
 use bevy_fluid::euler_fluid::{
     definition::{FluidSettings, LocalForces, SimulationInterval, VelocityTextures},
     fluid_material::VelocityMaterial,
-    uniform::SimulationUniform,
     FluidPlugin,
 };
 
