@@ -1,7 +1,7 @@
 #import bevy_fluid::fluid_uniform::SimulationUniform;
 
-@group(0) @binding(2) var u: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(3) var v: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(2) var u1: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(3) var v1: texture_storage_2d<r32float, read_write>;
 
 @group(1) @binding(0) var<uniform> constants: SimulationUniform;
 
@@ -30,10 +30,10 @@ fn add_force(
         net_force = net_force + vec2<f32>(force_u, force_v);
     }
 
-    let u_val = textureLoad(u, x_u).r;
-    let v_val = textureLoad(v, x_v).r;
-    textureStore(u, x_u, vec4<f32>(u_val + net_force.x * constants.dt, 0.0, 0.0, 0.0));
-    textureStore(v, x_v, vec4<f32>(v_val + net_force.y * constants.dt, 0.0, 0.0, 0.0));
+    let u_val = textureLoad(u1, x_u).r;
+    let v_val = textureLoad(v1, x_v).r;
+    textureStore(u1, x_u, vec4<f32>(u_val + net_force.x * constants.dt, 0.0, 0.0, 0.0));
+    textureStore(v1, x_v, vec4<f32>(v_val + net_force.y * constants.dt, 0.0, 0.0, 0.0));
 }
 
 fn gaussian_2d(x: vec2<f32>, x0: vec2<f32>, sigma: f32) -> f32 {
