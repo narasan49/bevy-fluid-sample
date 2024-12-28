@@ -70,6 +70,14 @@ pub struct Obstacles {
     pub circles: Vec<CircleObstacle>,
 }
 
+impl FromWorld for Obstacles {
+    fn from_world(_world: &mut World) -> Self {
+        Self {
+            circles: vec![],
+        }
+    }
+}
+
 #[derive(Bundle)]
 pub struct FluidSimulationBundle {
     pub velocity_textures: VelocityTextures,

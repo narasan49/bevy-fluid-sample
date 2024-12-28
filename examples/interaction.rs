@@ -14,8 +14,10 @@ use bevy::{
 };
 
 use bevy_fluid::euler_fluid::{
-    add_force::AddForceMaterial, advection::AdvectionMaterial, fluid_material::VelocityMaterial,
-    uniform::SimulationUniform, FluidPlugin,
+    definition::{FluidSettings, LocalForces, SimulationInterval, VelocityTextures},
+    fluid_material::VelocityMaterial,
+    uniform::SimulationUniform,
+    FluidPlugin,
 };
 
 const WIDTH: f32 = 1280.0;
@@ -59,7 +61,7 @@ fn main() {
     )
     .add_plugins(FluidPlugin)
     .add_systems(Startup, setup_scene)
-    .add_systems(Update, (on_advection_initialized, update))
+    .add_systems(Update, on_advection_initialized)
     .add_systems(Update, mouse_motion);
 
     app.run();
@@ -70,46 +72,39 @@ fn setup_scene(mut commands: Commands) {
         .spawn(Camera2dBundle::default())
         .insert(Name::new("Camera"));
 
-    commands.spawn(SimulationUniform {
+    commands.spawn(FluidSettings {
         dx: 1.0f32,
-        dt: 0.5f32,
-        rho: 1.293f32,
+        dt: SimulationInterval::Fixed(0.5f32),
+        rho: 1.293f32, // water
+        size: (512, 512),
     });
 }
 
 fn on_advection_initialized(
     mut commands: Commands,
-    advection: Option<Res<AdvectionMaterial>>,
+    query: Query<&VelocityTextures, Added<VelocityTextures>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<VelocityMaterial>>,
 ) {
-    if let Some(advection) = advection {
-        if advection.is_changed() {
-            info!("prepare velocity texture");
-            // spwan plane to visualize advection
-            let mesh = meshes.add(Rectangle::default());
-            let material = materials.add(VelocityMaterial {
-                offset: 0.5,
-                scale: 0.1,
-                u: Some(advection.u_in.clone()),
-                v: Some(advection.v_in.clone()),
-            });
+    for velocity_texture in &query {
+        info!("prepare velocity texture");
+        // spwan plane to visualize advection
+        let mesh = meshes.add(Rectangle::default());
+        let material = materials.add(VelocityMaterial {
+            offset: 0.5,
+            scale: 0.1,
+            u: Some(velocity_texture.u0.clone()),
+            v: Some(velocity_texture.v0.clone()),
+        });
 
-            commands
-                .spawn(MaterialMesh2dBundle {
-                    mesh: mesh.into(),
-                    transform: Transform::default().with_scale(Vec3::splat(512.0)),
-                    material,
-                    ..default()
-                })
-                .insert(MeshMarker);
-        }
-    }
-}
-
-fn update(mut query: Query<&mut SimulationUniform>, _time: Res<Time>) {
-    for mut uniform in &mut query {
-        uniform.dt = 0.5;
+        commands
+            .spawn(MaterialMesh2dBundle {
+                mesh: mesh.into(),
+                transform: Transform::default().with_scale(Vec3::splat(512.0)),
+                material,
+                ..default()
+            })
+            .insert(MeshMarker);
     }
 }
 
@@ -117,9 +112,9 @@ fn mouse_motion(
     mouse_button_input: Res<ButtonInput<MouseButton>>,
     mut mouse_motion: EventReader<MouseMotion>,
     touches: Res<Touches>,
-    mut force_material: ResMut<AddForceMaterial>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<&OrthographicProjection, With<Camera2d>>,
+    mut q_fluid: Query<&mut LocalForces>,
 ) {
     if mouse_button_input.pressed(MouseButton::Left) {
         let window = q_window.single();
@@ -129,16 +124,17 @@ fn mouse_motion(
                 .map(|mouse| mouse.delta)
                 .collect::<Vec<_>>();
 
-            let position = screen_to_mesh_coordinate(
-                cursor_position,
-                window,
-                q_camera.single(),
-                Vec2::splat(512.),
-            );
-            let position = vec![position; force.len()];
-            force_material.force = force;
-            force_material.position = position;
-
+            for mut local_forces in &mut q_fluid {
+                let position = screen_to_mesh_coordinate(
+                    cursor_position,
+                    window,
+                    q_camera.single(),
+                    Vec2::splat(512.),
+                );
+                let position = vec![position; force.len()];
+                local_forces.force = force.clone();
+                local_forces.position = position;
+            }
             return;
         }
     }
@@ -147,19 +143,21 @@ fn mouse_motion(
         .iter()
         .map(|touch| touch.delta())
         .collect::<Vec<_>>();
-    let touch_position = touches
-        .iter()
-        .map(|touch| {
-            screen_to_mesh_coordinate(
-                touch.position(),
-                q_window.single(),
-                q_camera.single(),
-                Vec2::splat(512.),
-            )
-        })
-        .collect::<Vec<_>>();
-    force_material.force = touch_forces;
-    force_material.position = touch_position;
+    for mut local_forces in &mut q_fluid {
+        let touch_position = touches
+            .iter()
+            .map(|touch| {
+                screen_to_mesh_coordinate(
+                    touch.position(),
+                    q_window.single(),
+                    q_camera.single(),
+                    Vec2::splat(512.),
+                )
+            })
+            .collect::<Vec<_>>();
+        local_forces.force = touch_forces.clone();
+        local_forces.position = touch_position;
+    }
 }
 
 fn screen_to_mesh_coordinate(

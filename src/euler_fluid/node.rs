@@ -8,7 +8,7 @@ use bevy::{
 
 use super::{
     definition::FluidSettings,
-    fluid_bind_group::{FluidBindGroups, FluidPipelines},
+    fluid_bind_group::{FluidBindGroupResources, FluidBindGroups, FluidPipelines},
 };
 
 const WORKGROUP_SIZE: u32 = 8;
@@ -56,6 +56,7 @@ impl render_graph::Node for EulerFluidNode {
             }
             State::Init => {
                 if let (
+                    CachedPipelineState::Ok(_update_grid_label_pipeline),
                     CachedPipelineState::Ok(_advection_pipeline),
                     CachedPipelineState::Ok(_add_force_pipeline),
                     CachedPipelineState::Ok(_divergence_pipeline),
@@ -63,6 +64,7 @@ impl render_graph::Node for EulerFluidNode {
                     CachedPipelineState::Ok(_jacobi_iteration_reverse_pipeline),
                     CachedPipelineState::Ok(_solve_velocity_pipeline),
                 ) = (
+                    pipeline_cache.get_compute_pipeline_state(pipelines.update_grid_label_pipeline),
                     pipeline_cache.get_compute_pipeline_state(pipelines.advection_pipeline),
                     pipeline_cache.get_compute_pipeline_state(pipelines.add_force_pipeline),
                     pipeline_cache.get_compute_pipeline_state(pipelines.divergence_pipeline),
@@ -114,6 +116,7 @@ impl render_graph::Node for EulerFluidNode {
                 }
             }
             State::Update => {
+                let update_grid_label_pipeline = pipeline_cache.get_compute_pipeline(pipelines.update_grid_label_pipeline).unwrap();
                 let advection_pipeline = pipeline_cache
                     .get_compute_pipeline(pipelines.advection_pipeline)
                     .unwrap();
@@ -133,11 +136,21 @@ impl render_graph::Node for EulerFluidNode {
                     .get_compute_pipeline(pipelines.solve_velocity_pipeline)
                     .unwrap();
 
+                let bind_group_resources = world.resource::<FluidBindGroupResources>();
                 for (_entity, settings, bind_groups) in self.query.iter_manual(world) {
                     let mut pass = render_context
                         .command_encoder()
                         .begin_compute_pass(&ComputePassDescriptor::default());
                     let size = settings.size;
+
+                    pass.set_pipeline(&update_grid_label_pipeline);
+                    pass.set_bind_group(0, &bind_groups.grid_center_bind_group, &[]);
+                    pass.set_bind_group(1, &bind_group_resources.obstacles_bind_group, &[]);
+                    pass.dispatch_workgroups(
+                        size.0 / WORKGROUP_SIZE,
+                        size.1 / WORKGROUP_SIZE,
+                        1,
+                    ); 
 
                     pass.set_pipeline(&advection_pipeline);
                     pass.set_bind_group(0, &bind_groups.velocity_bind_group, &[]);

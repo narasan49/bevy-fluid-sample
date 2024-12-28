@@ -13,7 +13,7 @@ use bevy::{
 };
 
 use bevy_fluid::euler_fluid::{
-    advection::AdvectionMaterial,
+    definition::{FluidSettings, SimulationInterval, VelocityTextures},
     fluid_material::VelocityMaterial,
     geometry::{self},
     uniform::SimulationUniform,
@@ -63,7 +63,7 @@ fn main() {
     .add_plugins(FluidPlugin)
     .add_plugins(GameUiPlugin)
     .add_systems(Startup, setup_scene)
-    .add_systems(Update, (on_advection_initialized, update, update_geometry))
+    .add_systems(Update, (on_fluid_setup, update, update_geometry))
     .add_systems(Update, (button_update, add_object));
 
     if cfg!(target_os = "windows") {
@@ -102,10 +102,11 @@ fn setup_scene(mut commands: Commands) {
         })
         .insert(Name::new("Light"));
 
-    commands.spawn(SimulationUniform {
+    commands.spawn(FluidSettings {
         dx: 1.0f32,
-        dt: 0.5f32,
+        dt: SimulationInterval::Fixed(0.5f32),
         rho: 1.293f32,
+        size: (512, 512),
     });
 
     if cfg!(target_os = "windows") {
@@ -113,32 +114,31 @@ fn setup_scene(mut commands: Commands) {
     }
 }
 
-fn on_advection_initialized(
+fn on_fluid_setup(
     mut commands: Commands,
-    advection: Option<Res<AdvectionMaterial>>,
+    query: Query<&VelocityTextures, Added<VelocityTextures>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<VelocityMaterial>>,
 ) {
-    if let Some(advection) = advection {
-        if advection.is_changed() {
-            // spwan plane to visualize advection
-            let mesh =
-                meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(-1.0, 0.0, 0.0)));
-            let material = materials.add(VelocityMaterial {
-                offset: 0.5,
-                scale: 0.1,
-                u: Some(advection.u_in.clone()),
-                v: Some(advection.v_in.clone()),
-            });
-            commands.spawn((
-                Name::new("advection"),
-                MaterialMeshBundle {
-                    mesh,
-                    material,
-                    ..default()
-                },
-            ));
-        }
+    for velocity_texture in &query {
+        info!("prepare velocity texture");
+        // spwan plane to visualize advection
+        let mesh =
+            meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(-1.0, 0.0, 0.0)));
+        let material = materials.add(VelocityMaterial {
+            offset: 0.5,
+            scale: 0.1,
+            u: Some(velocity_texture.u0.clone()),
+            v: Some(velocity_texture.v0.clone()),
+        });
+        commands.spawn((
+            Name::new("advection"),
+            MaterialMeshBundle {
+                mesh,
+                material,
+                ..default()
+            },
+        ));
     }
 }
 
@@ -148,13 +148,11 @@ fn update(mut query: Query<&mut SimulationUniform>, _time: Res<Time>) {
     }
 }
 
-// ToDo: Support for variable FPS
 fn update_geometry(
     frame: Res<FrameCount>,
     mut object_query: Query<(&geometry::Circle, &mut Transform, &mut geometry::Velocity)>,
-    uniform_query: Query<&SimulationUniform>,
 ) {
-    let dt = uniform_query.single().dt;
+    let dt = 0.5;
     let t = frame.0 as f32 * dt;
     let freq = 0.1;
     for (_circle, mut transform, mut velocity) in &mut object_query {

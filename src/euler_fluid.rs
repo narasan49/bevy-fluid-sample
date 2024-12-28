@@ -29,7 +29,7 @@ use bevy::{
     },
     sprite::Material2dPlugin,
 };
-use definition::{GridCenterTextures, LocalForces, Obstacles, VelocityTextures};
+use definition::{CircleObstacle, GridCenterTextures, LocalForces, Obstacles, VelocityTextures};
 use fluid_bind_group::FluidPipelines;
 use fluid_material::VelocityMaterial;
 use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUniform, Velocity};
@@ -69,6 +69,7 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractResourcePlugin::<JacobiMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<GridLabelMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<CircleCollectionMaterial>::default())
+            .add_plugins(ExtractResourcePlugin::<Obstacles>::default())
             .add_plugins(ExtractComponentPlugin::<FluidSettings>::default())
             .add_plugins(ExtractComponentPlugin::<FluidBindGroups>::default())
             .add_plugins(ExtractComponentPlugin::<VelocityTextures>::default())
@@ -80,7 +81,7 @@ impl Plugin for FluidPlugin {
             .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
             .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
             // .add_systems(Startup, setup)
-            // .add_systems(Update, update_geometry)
+            .add_systems(Update, update_geometry)
             .add_systems(Update, watch_fluid_compoent);
 
         let render_app = app.sub_app_mut(RenderApp);
@@ -160,7 +161,7 @@ impl Plugin for FluidPlugin {
         // render_app.init_resource::<GridLabelPipeline>();
 
         render_app.init_resource::<FluidPipelines>();
-        render_app.insert_resource(Obstacles { circles: vec![] });
+        app.init_resource::<Obstacles>();
     }
 }
 
@@ -246,20 +247,20 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
 
 fn update_geometry(
     query: Query<(&geometry::Circle, &Transform, &Velocity)>,
-    mut geometries: ResMut<CircleCollectionMaterial>,
+    mut obstacles: ResMut<Obstacles>,
 ) {
     let circles = query
         .iter()
         .map(|(circle, transform, velocity)| {
-            return CrircleUniform {
-                r: circle.radius,
-                position: transform.translation.xz(),
+            return CircleObstacle {
+                radius: circle.radius,
+                center: transform.translation.xz(),
                 velocity: vec2(velocity.u, velocity.v),
             };
         })
-        .collect::<Vec<CrircleUniform>>();
+        .collect::<Vec<_>>();
 
-    geometries.circles = circles;
+    obstacles.circles = circles;
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
