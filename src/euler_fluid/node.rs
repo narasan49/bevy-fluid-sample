@@ -146,8 +146,9 @@ impl render_graph::Node for EulerFluidNode {
                     let size = settings.size;
 
                     pass.set_pipeline(&update_grid_label_pipeline);
-                    pass.set_bind_group(0, &bind_groups.grid_center_bind_group, &[]);
-                    pass.set_bind_group(1, &bind_group_resources.obstacles_bind_group, &[]);
+                    pass.set_bind_group(0, &bind_groups.velocity_bind_group, &[]);
+                    pass.set_bind_group(1, &bind_groups.grid_center_bind_group, &[]);
+                    pass.set_bind_group(2, &bind_group_resources.obstacles_bind_group, &[]);
                     pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
 
                     pass.set_pipeline(&advection_pipeline);

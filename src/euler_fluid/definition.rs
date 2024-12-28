@@ -37,10 +37,6 @@ pub struct GridCenterTextures {
     pub div: Handle<Image>,
     #[storage_texture(3, image_format = R32Uint, access = ReadWrite)]
     pub grid_label: Handle<Image>,
-    #[storage_texture(4, image_format = R32Float, access = ReadWrite)]
-    pub u_solid: Handle<Image>,
-    #[storage_texture(5, image_format = R32Float, access = ReadWrite)]
-    pub v_solid: Handle<Image>,
 }
 
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]

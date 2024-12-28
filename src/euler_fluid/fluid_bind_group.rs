@@ -85,6 +85,7 @@ impl FromWorld for FluidPipelines {
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue UpdateGridLabelPipeline")),
                 layout: vec![
+                    velocity_bind_group_layout.clone(),
                     grid_center_bind_group_layout.clone(),
                     obstacles_bind_group_layout.clone(),
                 ],

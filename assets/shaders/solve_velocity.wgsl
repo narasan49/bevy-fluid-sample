@@ -9,8 +9,6 @@
 
 @group(2) @binding(1) var p1: texture_storage_2d<r32float, read_write>;
 @group(2) @binding(3) var grid_label: texture_storage_2d<r32uint, read_write>;
-@group(2) @binding(4) var u_solid: texture_storage_2d<r32float, read_write>;
-@group(2) @binding(5) var v_solid: texture_storage_2d<r32float, read_write>;
 
 @compute
 @workgroup_size(1, 64, 1)
@@ -22,10 +20,10 @@ fn solve_velocity(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
     let grid_label_u0 = textureLoad(grid_label, x_u - vec2<i32>(1, 0)).r;
     let grid_label_u1 = textureLoad(grid_label, x_u).r;
     if (grid_label_u0 == 2) {
-        let u_solid = textureLoad(u_solid, x_u - vec2<i32>(1, 0)).r;
+        let u_solid = textureLoad(u1, x_u - vec2<i32>(1, 0)).r;
         textureStore(u0, x_u, vec4<f32>(u_solid, 0.0, 0.0, 0.0));
     } else if (grid_label_u1 == 2) {
-        let u_solid = textureLoad(u_solid, x_u).r;
+        let u_solid = textureLoad(u1, x_u).r;
         textureStore(u0, x_u, vec4<f32>(u_solid, 0.0, 0.0, 0.0));
     } else {
         let p1_u = textureLoad(p1, x_u).r;
@@ -43,10 +41,10 @@ fn solve_velocity(@builtin(global_invocation_id) invocation_id: vec3<u32>) {
     let grid_label_v0 = textureLoad(grid_label, x_v - vec2<i32>(0, 1)).r;
     let grid_label_v1 = textureLoad(grid_label, x_v).r;
     if (grid_label_v0 == 2) {
-        let v_solid = textureLoad(v_solid, x_v - vec2<i32>(0, 1)).r;
+        let v_solid = textureLoad(v1, x_v - vec2<i32>(0, 1)).r;
         textureStore(v0, x_v, vec4<f32>(v_solid, 0.0, 0.0, 0.0));
     } else if (grid_label_v1 == 2) {
-        let v_solid = textureLoad(v_solid, x_v).r;
+        let v_solid = textureLoad(v1, x_v).r;
         textureStore(v0, x_v, vec4<f32>(v_solid, 0.0, 0.0, 0.0));
     } else {
         let p1_v = textureLoad(p1, x_v).r;

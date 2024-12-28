@@ -33,8 +33,6 @@ pub(crate) fn watch_fluid_compoent(
         let p1 = images.new_texture_storage(size, TextureFormat::R32Float);
 
         let grid_label = images.new_texture_storage(size, TextureFormat::R32Uint);
-        let u_solid = images.new_texture_storage(size, TextureFormat::R32Float);
-        let v_solid = images.new_texture_storage(size, TextureFormat::R32Float);
 
         let velocity_textures = VelocityTextures { u0, v0, u1, v1 };
 
@@ -43,8 +41,6 @@ pub(crate) fn watch_fluid_compoent(
             p1,
             div,
             grid_label,
-            u_solid,
-            v_solid,
         };
 
         let uniform = SimulationUniform {
