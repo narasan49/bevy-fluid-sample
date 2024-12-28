@@ -1,14 +1,19 @@
 use bevy::{
     prelude::*,
-    render::{extract_component::ExtractComponent, render_resource::AsBindGroup},
+    render::{
+        extract_component::ExtractComponent,
+        extract_resource::ExtractResource,
+        render_resource::{AsBindGroup, ShaderType},
+    },
 };
 
+#[derive(Clone)]
 pub enum SimulationInterval {
     Fixed(f32),
     Dynamic,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, ExtractComponent)]
 pub struct FluidSettings {
     pub dx: f32,
     pub dt: SimulationInterval,
@@ -50,6 +55,19 @@ pub struct LocalForces {
     pub force: Vec<Vec2>,
     #[storage(1, read_only, visibility(compute))]
     pub position: Vec<Vec2>,
+}
+
+#[derive(Clone, ShaderType)]
+pub struct CircleObstacle {
+    pub radius: f32,
+    pub center: Vec2,
+    pub velocity: Vec2,
+}
+
+#[derive(Resource, Clone, ExtractResource, AsBindGroup)]
+pub struct Obstacles {
+    #[storage(0, read_only, visibility(compute))]
+    pub circles: Vec<CircleObstacle>,
 }
 
 #[derive(Bundle)]

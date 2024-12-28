@@ -10,6 +10,8 @@ pub mod projection;
 pub mod setup;
 pub mod uniform;
 
+use crate::euler_fluid::definition::FluidSettings;
+use crate::euler_fluid::fluid_bind_group::FluidBindGroups;
 use add_force::{AddForceBindGroup, AddForceMaterial, AddForcePipeline};
 use advection::{AdvectionBindGroup, AdvectionMaterial, AdvectionPipeline};
 use bevy::{
@@ -27,7 +29,7 @@ use bevy::{
     },
     sprite::Material2dPlugin,
 };
-use definition::{GridCenterTextures, LocalForces, VelocityTextures};
+use definition::{GridCenterTextures, LocalForces, Obstacles, VelocityTextures};
 use fluid_bind_group::FluidPipelines;
 use fluid_material::VelocityMaterial;
 use geometry::{CircleCollectionBindGroup, CircleCollectionMaterial, CrircleUniform, Velocity};
@@ -67,6 +69,8 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractResourcePlugin::<JacobiMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<GridLabelMaterial>::default())
             .add_plugins(ExtractResourcePlugin::<CircleCollectionMaterial>::default())
+            .add_plugins(ExtractComponentPlugin::<FluidSettings>::default())
+            .add_plugins(ExtractComponentPlugin::<FluidBindGroups>::default())
             .add_plugins(ExtractComponentPlugin::<VelocityTextures>::default())
             .add_plugins(ExtractComponentPlugin::<GridCenterTextures>::default())
             .add_plugins(ExtractComponentPlugin::<LocalForces>::default())
@@ -116,6 +120,11 @@ impl Plugin for FluidPlugin {
             .add_systems(
                 Render,
                 fluid_bind_group::prepare_fluid_bind_groups.in_set(RenderSet::PrepareBindGroups),
+            )
+            .add_systems(
+                Render,
+                fluid_bind_group::prepare_fluid_bind_group_for_resources
+                    .in_set(RenderSet::PrepareBindGroups),
             );
 
         let mut world = render_app.world_mut();
@@ -125,9 +134,6 @@ impl Plugin for FluidPlugin {
         // render_graph.add_node(FluidLabel, FluidNode::default());
         render_graph.add_node(FluidLabel, euler_fluid_node);
         render_graph.add_node_edge(FluidLabel, CameraDriverLabel);
-
-        // node for fluid component
-        // render_graph.add_node_edge(FluidLabel, CameraDriverLabel);
 
         load_internal_asset!(
             app,
@@ -154,6 +160,7 @@ impl Plugin for FluidPlugin {
         // render_app.init_resource::<GridLabelPipeline>();
 
         render_app.init_resource::<FluidPipelines>();
+        render_app.insert_resource(Obstacles { circles: vec![] });
     }
 }
 
