@@ -14,7 +14,7 @@ use bevy::{
 };
 
 use bevy_fluid::euler_fluid::{
-    definition::{FluidSettings, LocalForces, SimulationInterval, VelocityTextures},
+    definition::{FluidSettings, LocalForces, VelocityTextures},
     fluid_material::VelocityMaterial,
     FluidPlugin,
 };
@@ -73,7 +73,7 @@ fn setup_scene(mut commands: Commands) {
 
     commands.spawn(FluidSettings {
         dx: 1.0f32,
-        dt: SimulationInterval::Fixed(0.5f32),
+        dt: 0.5f32,
         rho: 1.293f32, // water
         size: (512, 512),
     });

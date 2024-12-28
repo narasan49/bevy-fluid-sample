@@ -2,10 +2,7 @@ use bevy::{prelude::*, render::render_resource::TextureFormat};
 
 use crate::{
     euler_fluid::{
-        definition::{
-            FluidSimulationBundle, GridCenterTextures, LocalForces, SimulationInterval,
-            VelocityTextures,
-        },
+        definition::{FluidSimulationBundle, GridCenterTextures, LocalForces, VelocityTextures},
         uniform::SimulationUniform,
     },
     texture::NewTexture,
@@ -50,14 +47,9 @@ pub(crate) fn watch_fluid_compoent(
             v_solid,
         };
 
-        let dt = match settings.dt {
-            SimulationInterval::Fixed(dt) => dt,
-            SimulationInterval::Dynamic => 0.5f32,
-        };
-
         let uniform = SimulationUniform {
             dx: settings.dx,
-            dt,
+            dt: settings.dt,
             rho: settings.rho,
         };
 

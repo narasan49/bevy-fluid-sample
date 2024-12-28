@@ -7,16 +7,10 @@ use bevy::{
     },
 };
 
-#[derive(Clone)]
-pub enum SimulationInterval {
-    Fixed(f32),
-    Dynamic,
-}
-
 #[derive(Component, Clone, ExtractComponent)]
 pub struct FluidSettings {
     pub dx: f32,
-    pub dt: SimulationInterval,
+    pub dt: f32,
     pub rho: f32,
     pub size: (u32, u32),
 }
