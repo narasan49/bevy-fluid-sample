@@ -81,6 +81,8 @@ fn setup_scene(mut commands: Commands) {
                 .with_translation(Vec3::ZERO.with_x(size as f32 * -0.51)),
         );
 
+    let size = 128;
+
     commands
         .spawn(FluidSettings {
             dx: 1.0f32,
