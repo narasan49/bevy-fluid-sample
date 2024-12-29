@@ -1,7 +1,7 @@
 use bevy::{
     prelude::*,
     render::{
-        render_graph,
+        render_graph::{self, RenderLabel},
         render_resource::{CachedPipelineState, ComputePassDescriptor, PipelineCache},
     },
 };
@@ -13,13 +13,16 @@ use super::{
 
 const WORKGROUP_SIZE: u32 = 8;
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
+pub(crate) struct FluidLabel;
+
 enum State {
     Loading,
     Init,
     Update,
 }
 
-pub struct EulerFluidNode {
+pub(crate) struct EulerFluidNode {
     state: State,
     // Query BindGroups components
     // Reference: bevy\crates\bevy_ui\src\render\render_pass.rs

@@ -1,22 +1,20 @@
 use bevy::{prelude::*, render::render_resource::TextureFormat};
 
 use crate::{
-    euler_fluid::{
-        definition::{FluidSimulationBundle, GridCenterTextures, LocalForces, VelocityTextures},
-        uniform::SimulationUniform,
+    euler_fluid::definition::{
+        FluidSimulationBundle, GridCenterTextures, LocalForces, SimulationUniform, VelocityTextures,
     },
     texture::NewTexture,
 };
 
 use super::definition::FluidSettings;
 
-pub(crate) fn watch_fluid_compoent(
+pub(crate) fn watch_fluid_component(
     mut commands: Commands,
     query: Query<(Entity, &FluidSettings), Added<FluidSettings>>,
     mut images: ResMut<Assets<Image>>,
 ) {
     for (entity, settings) in &query {
-        info!("Fluid settings spawned!: {:?}", entity);
         let size = settings.size;
         let size_u = (size.0 + 1, size.1);
         let size_v = (size.0, size.1 + 1);

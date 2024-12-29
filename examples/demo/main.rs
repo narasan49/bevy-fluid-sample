@@ -13,10 +13,9 @@ use bevy::{
 };
 
 use bevy_fluid::euler_fluid::{
-    definition::{FluidSettings, VelocityTextures},
+    definition::{FluidSettings, SimulationUniform, VelocityTextures},
     fluid_material::VelocityMaterial,
     geometry::{self},
-    uniform::SimulationUniform,
     FluidPlugin,
 };
 

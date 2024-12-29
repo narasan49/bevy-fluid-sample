@@ -2,9 +2,8 @@ pub mod definition;
 pub mod fluid_bind_group;
 pub mod fluid_material;
 pub mod geometry;
-pub mod node;
-pub mod setup;
-pub mod uniform;
+pub mod render_node;
+pub mod setup_components;
 
 use crate::euler_fluid::definition::FluidSettings;
 use crate::euler_fluid::fluid_bind_group::FluidBindGroups;
@@ -16,29 +15,27 @@ use bevy::{
         extract_component::{ExtractComponentPlugin, UniformComponentPlugin},
         extract_resource::ExtractResourcePlugin,
         graph::CameraDriverLabel,
-        render_graph::{RenderGraph, RenderLabel},
+        render_graph::RenderGraph,
         Render, RenderApp, RenderSet,
     },
     sprite::Material2dPlugin,
 };
-use definition::{CircleObstacle, GridCenterTextures, LocalForces, Obstacles, VelocityTextures};
+use definition::{
+    CircleObstacle, GridCenterTextures, LocalForces, Obstacles, SimulationUniform, VelocityTextures,
+};
 use fluid_bind_group::FluidPipelines;
 use fluid_material::VelocityMaterial;
 use geometry::Velocity;
 
-use node::EulerFluidNode;
+use render_node::{EulerFluidNode, FluidLabel};
 
-use setup::watch_fluid_compoent;
-use uniform::SimulationUniform;
+use setup_components::watch_fluid_component;
 
 const FLUID_UNIFORM_SHADER_HANDLE: Handle<Shader> =
     Handle::weak_from_u128(0x8B9323522322463BA8CF530771C532EF);
 
 const COORDINATE_SHADER_HANDLE: Handle<Shader> =
     Handle::weak_from_u128(0x9F8E2E5B1E5F40C096C31175C285BF11);
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
-struct FluidLabel;
 
 pub struct FluidPlugin;
 
@@ -55,7 +52,7 @@ impl Plugin for FluidPlugin {
             .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
             .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
             .add_systems(Update, update_geometry)
-            .add_systems(Update, watch_fluid_compoent);
+            .add_systems(Update, watch_fluid_component);
 
         let render_app = app.sub_app_mut(RenderApp);
         render_app

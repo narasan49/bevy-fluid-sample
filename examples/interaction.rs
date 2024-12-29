@@ -87,7 +87,7 @@ fn on_advection_initialized(
 ) {
     for velocity_texture in &query {
         info!("prepare velocity texture");
-        // spwan plane to visualize advection
+        // spawn plane to visualize advection
         let mesh = meshes.add(Rectangle::default());
         let material = materials.add(VelocityMaterial {
             offset: 0.5,

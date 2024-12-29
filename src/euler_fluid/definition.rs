@@ -15,6 +15,13 @@ pub struct FluidSettings {
     pub size: (u32, u32),
 }
 
+#[derive(Component, ExtractComponent, ShaderType, Clone, Copy, Default)]
+pub struct SimulationUniform {
+    pub dx: f32,
+    pub dt: f32,
+    pub rho: f32,
+}
+
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]
 pub struct VelocityTextures {
     #[storage_texture(0, image_format = R32Float, access = ReadWrite)]

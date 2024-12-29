@@ -16,13 +16,12 @@ use bevy::{
     },
 };
 
-use super::{
-    definition::{GridCenterTextures, LocalForces, Obstacles, VelocityTextures},
-    uniform::SimulationUniform,
+use super::definition::{
+    GridCenterTextures, LocalForces, Obstacles, SimulationUniform, VelocityTextures,
 };
 
 #[derive(Resource)]
-pub struct FluidPipelines {
+pub(crate) struct FluidPipelines {
     pub initialize_velocity_pipeline: CachedComputePipelineId,
     pub initialize_grid_center_pipeline: CachedComputePipelineId,
     pub update_grid_label_pipeline: CachedComputePipelineId,
@@ -199,7 +198,7 @@ impl FromWorld for FluidPipelines {
 }
 
 #[derive(Component, Clone, ExtractComponent)]
-pub struct FluidBindGroups {
+pub(crate) struct FluidBindGroups {
     pub velocity_bind_group: BindGroup,
     pub grid_center_bind_group: BindGroup,
     pub local_forces_bind_group: BindGroup,
@@ -208,11 +207,11 @@ pub struct FluidBindGroups {
 }
 
 #[derive(Resource)]
-pub struct FluidBindGroupResources {
+pub(crate) struct FluidBindGroupResources {
     pub obstacles_bind_group: BindGroup,
 }
 
-pub fn prepare_fluid_bind_groups(
+pub(super) fn prepare_fluid_bind_groups(
     mut commands: Commands,
     pipelines: Res<FluidPipelines>,
     simulation_uniform: Res<ComponentUniforms<SimulationUniform>>,
@@ -277,7 +276,7 @@ pub fn prepare_fluid_bind_groups(
     }
 }
 
-pub fn prepare_fluid_bind_group_for_resources(
+pub(super) fn prepare_fluid_bind_group_for_resources(
     mut commands: Commands,
     pilelines: Res<FluidPipelines>,
     obstacles: Res<Obstacles>,
