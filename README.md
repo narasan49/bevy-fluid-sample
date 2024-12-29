@@ -39,7 +39,11 @@ I have some examples to demonstrate my fluid simulation:
       ```
       https://github.com/user-attachments/assets/af3e9aa5-b768-4375-ba44-a4876557524c
 
-
+    - **Spawn multiple fluids**
+      ```ps1
+      cargo run --example multiple
+      ```
+      ![img](./docs/multiple_fluids.png)
 
 ## Acknowledgments
 The simulation is inspired by and based on the algorithms described in these books:
