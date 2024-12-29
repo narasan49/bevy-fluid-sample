@@ -1,18 +1,7 @@
 use bevy::{
-    prelude::{Component, Resource},
-    render::{
-        extract_component::ExtractComponent,
-        render_resource::{BindGroup, ShaderType},
-    },
+    prelude::Component,
+    render::{extract_component::ExtractComponent, render_resource::ShaderType},
 };
-
-#[derive(Component, ExtractComponent, ShaderType, Clone, Copy, Default)]
-pub struct DeltaTimeUniform {
-    pub dt: f32,
-}
-
-#[derive(Resource)]
-pub struct DeltaTimeUniformBindGroup(pub BindGroup);
 
 #[derive(Component, ExtractComponent, ShaderType, Clone, Copy, Default)]
 pub struct SimulationUniform {
@@ -20,6 +9,3 @@ pub struct SimulationUniform {
     pub dt: f32,
     pub rho: f32,
 }
-
-#[derive(Resource)]
-pub struct SimulationUniformBindGroup(pub BindGroup);
