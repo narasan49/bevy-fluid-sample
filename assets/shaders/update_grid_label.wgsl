@@ -3,33 +3,24 @@ struct Circle {
     center: vec2<f32>,
     velocity: vec2<f32>,
 }
-@group(0) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
-@group(0) @binding(1) var u_solid: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(2) var v_solid: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(0) var u0: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(1) var v0: texture_storage_2d<r32float, read_write>;
 
-@group(1) @binding(0) var<storage, read> circles: array<Circle>;
+@group(1) @binding(3) var grid_label: texture_storage_2d<r32uint, read_write>;
 
-
-@compute
-@workgroup_size(8, 8, 1)
-fn initialize(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let x = vec2<i32>(i32(global_id.x), i32(global_id.y));
-    textureStore(grid_label, x, vec4<u32>(1, 0, 0, 0));
-    textureStore(u_solid, x, vec4<f32>(0, 0, 0, 0));
-    textureStore(v_solid, x, vec4<f32>(0, 0, 0, 0));
-}
+@group(2) @binding(0) var<storage, read> circles: array<Circle>;
 
 @compute
 @workgroup_size(8, 8, 1)
-fn update(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn update_grid_label(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let x = vec2<i32>(i32(global_id.x), i32(global_id.y));
     let dim_grid = textureDimensions(grid_label);
 
     // ToDo: User defined boundary conditions
     if (x.x == 0 || x.x == i32(dim_grid.x) - 1 || x.y == 0 || x.y == i32(dim_grid.y) - 1) {
         textureStore(grid_label, x, vec4<u32>(2, 0, 0, 0));
-        textureStore(u_solid, x, vec4<f32>(0, 0, 0, 0));
-        textureStore(v_solid, x, vec4<f32>(0, 0, 0, 0));
+        textureStore(u0, x, vec4<f32>(0, 0, 0, 0));
+        textureStore(v0, x, vec4<f32>(0, 0, 0, 0));
         return;
     }
     
@@ -59,6 +50,9 @@ fn update(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     textureStore(grid_label, x, vec4<u32>(label, 0, 0, 0));
-    textureStore(u_solid, x, vec4<f32>(u, 0.0, 0.0, 0.0));
-    textureStore(v_solid, x, vec4<f32>(v, 0.0, 0.0, 0.0));
+
+    if (label == 2u) {
+        textureStore(u0, x, vec4<f32>(u, 0.0, 0.0, 0.0));
+        textureStore(v0, x, vec4<f32>(v, 0.0, 0.0, 0.0));
+    }
 }

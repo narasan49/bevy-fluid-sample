@@ -6,13 +6,12 @@ use bevy::{
     prelude::*,
     render::{
         camera::CameraProjection,
-        settings::{Backends, WgpuSettings},
+        settings::{Backends, RenderCreation, WgpuSettings},
         RenderPlugin,
     },
     sprite::MaterialMesh2dBundle,
     window::PrimaryWindow,
 };
-
 use bevy_fluid::euler_fluid::{
     definition::{FluidSettings, LocalForces, VelocityTextures},
     fluid_material::VelocityMaterial,
@@ -22,11 +21,7 @@ use bevy_fluid::euler_fluid::{
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 720.0;
 
-#[derive(Component)]
-struct MeshMarker;
-
 fn main() {
-    let mut app = App::new();
     // [workaround] Asset meta files cannot be found on browser.
     // see also: https://github.com/bevyengine/bevy/issues/10157
     let meta_check = if cfg!(target_arch = "wasm32") {
@@ -35,59 +30,81 @@ fn main() {
         AssetMetaCheck::Always
     };
 
-    app.add_plugins(
-        DefaultPlugins
-            .set(WindowPlugin {
-                primary_window: Some(Window {
-                    resolution: (WIDTH, HEIGHT).into(),
-                    title: "bevy fluid".to_string(),
-                    fit_canvas_to_parent: true,
+    let _app = App::new()
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resolution: (WIDTH, HEIGHT).into(),
+                        title: "fluid component".to_string(),
+                        fit_canvas_to_parent: true,
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(RenderPlugin {
+                    render_creation: RenderCreation::Automatic(WgpuSettings {
+                        backends: Some(Backends::DX12 | Backends::BROWSER_WEBGPU),
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(AssetPlugin {
+                    meta_check,
                     ..default()
                 }),
-                ..default()
-            })
-            .set(RenderPlugin {
-                render_creation: bevy::render::settings::RenderCreation::Automatic(WgpuSettings {
-                    backends: Some(Backends::DX12 | Backends::BROWSER_WEBGPU),
-                    ..default()
-                }),
-                ..default()
-            })
-            .set(AssetPlugin {
-                meta_check,
-                ..default()
-            }),
-    )
-    .add_plugins(FluidPlugin)
-    .add_systems(Startup, setup_scene)
-    .add_systems(Update, on_advection_initialized)
-    .add_systems(Update, mouse_motion);
-
-    app.run();
+        )
+        .add_plugins(FluidPlugin)
+        .add_systems(Startup, setup_scene)
+        .add_systems(Update, (mouse_motion, on_fluid_setup))
+        .run();
 }
 
 fn setup_scene(mut commands: Commands) {
+    info!("initialize scene.");
     commands
         .spawn(Camera2dBundle::default())
         .insert(Name::new("Camera"));
 
-    commands.spawn(FluidSettings {
-        dx: 1.0f32,
-        dt: 0.5f32,
-        rho: 1.293f32, // water
-        size: (512, 512),
-    });
+    let size = 512u32;
+
+    commands
+        .spawn(FluidSettings {
+            dx: 1.0f32,
+            dt: 0.5f32,
+            rho: 1.293f32,
+            size: (size, size),
+        })
+        .insert(
+            Transform::default()
+                .with_scale(Vec3::splat(size as f32))
+                .with_translation(Vec3::ZERO.with_x(size as f32 * -0.51)),
+        );
+
+    let size = 128;
+
+    commands
+        .spawn(FluidSettings {
+            dx: 1.0f32,
+            dt: 0.5f32,
+            rho: 1.293f32,
+            size: (size, size),
+        })
+        .insert(
+            Transform::default()
+                .with_scale(Vec3::splat(size as f32))
+                .with_translation(Vec3::ZERO.with_x(size as f32 * 0.51)),
+        );
 }
 
-fn on_advection_initialized(
+fn on_fluid_setup(
     mut commands: Commands,
-    query: Query<&VelocityTextures, Added<VelocityTextures>>,
+    query: Query<(&VelocityTextures, &Transform), Added<VelocityTextures>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<VelocityMaterial>>,
 ) {
-    for velocity_texture in &query {
-        info!("prepare velocity texture");
-        // spawn plane to visualize advection
+    for (velocity_texture, transform) in &query {
+        // spwan plane to visualize advection
         let mesh = meshes.add(Rectangle::default());
         let material = materials.add(VelocityMaterial {
             offset: 0.5,
@@ -96,14 +113,12 @@ fn on_advection_initialized(
             v: Some(velocity_texture.v0.clone()),
         });
 
-        commands
-            .spawn(MaterialMesh2dBundle {
-                mesh: mesh.into(),
-                transform: Transform::default().with_scale(Vec3::splat(512.0)),
-                material,
-                ..default()
-            })
-            .insert(MeshMarker);
+        commands.spawn(MaterialMesh2dBundle {
+            mesh: mesh.into(),
+            transform: *transform,
+            material,
+            ..default()
+        });
     }
 }
 
@@ -113,7 +128,7 @@ fn mouse_motion(
     touches: Res<Touches>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<&OrthographicProjection, With<Camera2d>>,
-    mut q_fluid: Query<&mut LocalForces>,
+    mut q_fluid: Query<(&mut LocalForces, &FluidSettings, &Transform)>,
 ) {
     if mouse_button_input.pressed(MouseButton::Left) {
         let window = q_window.single();
@@ -123,17 +138,18 @@ fn mouse_motion(
                 .map(|mouse| mouse.delta)
                 .collect::<Vec<_>>();
 
-            for mut local_forces in &mut q_fluid {
-                let position = screen_to_mesh_coordinate(
-                    cursor_position,
+            for (mut local_forces, fluid_settings, transform) in q_fluid.iter_mut() {
+                let position = screen_to_mesh2d_coordinate(
+                    cursor_position - transform.translation.xy(),
                     window,
                     q_camera.single(),
-                    Vec2::splat(512.),
+                    Vec2::new(fluid_settings.size.0 as f32, fluid_settings.size.1 as f32),
                 );
                 let position = vec![position; force.len()];
                 local_forces.force = force.clone();
                 local_forces.position = position;
             }
+
             return;
         }
     }
@@ -142,24 +158,25 @@ fn mouse_motion(
         .iter()
         .map(|touch| touch.delta())
         .collect::<Vec<_>>();
-    for mut local_forces in &mut q_fluid {
+    for (mut local_forces, fluid_settings, transform) in q_fluid.iter_mut() {
         let touch_position = touches
             .iter()
             .map(|touch| {
-                screen_to_mesh_coordinate(
-                    touch.position(),
+                screen_to_mesh2d_coordinate(
+                    touch.position() - transform.translation.xy(),
                     q_window.single(),
                     q_camera.single(),
-                    Vec2::splat(512.),
+                    Vec2::new(fluid_settings.size.0 as f32, fluid_settings.size.1 as f32),
                 )
             })
             .collect::<Vec<_>>();
+
         local_forces.force = touch_forces.clone();
         local_forces.position = touch_position;
     }
 }
 
-fn screen_to_mesh_coordinate(
+fn screen_to_mesh2d_coordinate(
     position: Vec2,
     window: &Window,
     projection: &OrthographicProjection,

@@ -1,32 +1,16 @@
 #import bevy_fluid::fluid_uniform::SimulationUniform;
 
-@group(0) @binding(0) var u_in: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(1) var u_out: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(2) var v_in: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(3) var v_out: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(0) var u0: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(1) var v0: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(2) var u1: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(3) var v1: texture_storage_2d<r32float, read_write>;
 
 @group(1) @binding(0) var<uniform> constants: SimulationUniform;
 
-@group(2) @binding(0) var grid_label: texture_storage_2d<r32uint, read_write>;
-@group(2) @binding(1) var u_solid: texture_storage_2d<r32float, read_write>;
-@group(2) @binding(2) var v_solid: texture_storage_2d<r32float, read_write>;
+@group(2) @binding(3) var grid_label: texture_storage_2d<r32uint, read_write>;
 
-// ToDo: Move to a separate file
-@compute @workgroup_size(1, 64, 1)
-fn initialize(
-    @builtin(global_invocation_id) invocation_id: vec3<u32>,
-) {
-    let x_u = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
-    let x_v = vec2<i32>(x_u.y, x_u.x);
-    // let speed = 10.0 * gausian_2d(256.0 - f32(invocation_id.x), 256.0 - f32(invocation_id.y), 100.0);
-    let speed = 0.0;
-    textureStore(u_in, x_u, vec4<f32>(speed, 0.0, 0.0, 0.0));
-    textureStore(u_out, x_u, vec4<f32>(speed, 0.0, 0.0, 0.0));
-    textureStore(v_in, x_v, vec4<f32>(speed, 0.0, 0.0, 0.0));
-    textureStore(v_out, x_v, vec4<f32>(speed, 0.0, 0.0, 0.0));
-}
-
-@compute @workgroup_size(1, 64, 1)
+@compute
+@workgroup_size(1, 64, 1)
 fn advection(
     @builtin(global_invocation_id) invocation_id: vec3<u32>,
 ) {
@@ -37,46 +21,32 @@ fn advection(
     let label_uplus = textureLoad(grid_label, x_u).r;
     // At this point, we don't update the solid velocity. Solid velocity is taken into account in the divergence and pressure-update steps.
     if (label_u == 0 || label_uplus == 0) {
-        textureStore(u_out, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        textureStore(u1, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
     } else {
-        let backtraced_x_u: vec2<f32> = runge_kutta(u_in, v_in, x_u, constants.dt);
-        let dim_u = vec2<f32>(textureDimensions(u_in));
+        let backtraced_x_u: vec2<f32> = runge_kutta(u0, v0, x_u, constants.dt);
+        let dim_u = vec2<f32>(textureDimensions(u0));
         if (backtraced_x_u.x < 0.0 || backtraced_x_u.x > dim_u.x - 1.0 || backtraced_x_u.y < 0.0 || backtraced_x_u.y > dim_u.y - 1.0) {
-            textureStore(u_out, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+            textureStore(u1, x_u, vec4<f32>(0.0, 0.0, 0.0, 0.0));
         } else {
-            let backtraced_u: f32 = u_at(u_in, backtraced_x_u);
-            textureStore(u_out, x_u, vec4<f32>(backtraced_u, 0.0, 0.0, 0.0));
+            let backtraced_u: f32 = u_at(u0, backtraced_x_u);
+            textureStore(u1, x_u, vec4<f32>(backtraced_u, 0.0, 0.0, 0.0));
         }
     }
 
     let label_v = textureLoad(grid_label, x_v - vec2<i32>(0, 1)).r;
     let label_vplus = textureLoad(grid_label, x_v).r;
     if (label_v == 0 || label_vplus == 0) {
-        textureStore(v_out, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        textureStore(v1, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));
     } else {
-        let backtraced_x_v: vec2<f32> = runge_kutta(u_in, v_in, x_v, constants.dt);
-        let dim_v = vec2<f32>(textureDimensions(v_in));
+        let backtraced_x_v: vec2<f32> = runge_kutta(u0, v0, x_v, constants.dt);
+        let dim_v = vec2<f32>(textureDimensions(v0));
         if (backtraced_x_v.x < 0.0 || backtraced_x_v.x > dim_v.x - 1.0 || backtraced_x_v.y < 0.0 || backtraced_x_v.y > dim_v.y - 1.0) {
-            textureStore(v_out, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+            textureStore(v1, x_v, vec4<f32>(0.0, 0.0, 0.0, 0.0));
         } else {
-            let backtraced_v: f32 = v_at(v_in, backtraced_x_v);
-            textureStore(v_out, x_v, vec4<f32>(backtraced_v, 0.0, 0.0, 0.0));
+            let backtraced_v: f32 = v_at(v0, backtraced_x_v);
+            textureStore(v1, x_v, vec4<f32>(backtraced_v, 0.0, 0.0, 0.0));
         }
     }
-}
-
-// ToDo: Move to a separate file
-@compute @workgroup_size(1, 64, 1)
-fn swap(
-    @builtin(global_invocation_id) invocation_id: vec3<u32>,
-) {
-    let x_u = vec2<i32>(i32(invocation_id.x), i32(invocation_id.y));
-    let u_tmp = textureLoad(u_out, x_u);
-    textureStore(u_in, x_u, u_tmp);
-
-    let x_v = vec2<i32>(x_u.y, x_u.x);
-    let v_tmp = textureLoad(v_out, x_v);
-    textureStore(v_in, x_v, v_tmp);
 }
 
 fn runge_kutta(
