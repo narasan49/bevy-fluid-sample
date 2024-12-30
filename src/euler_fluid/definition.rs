@@ -3,7 +3,7 @@ use bevy::{
     render::{
         extract_component::ExtractComponent,
         extract_resource::ExtractResource,
-        render_resource::{AsBindGroup, ShaderType},
+        render_resource::{AsBindGroup, ShaderType, UniformBuffer},
     },
 };
 
@@ -73,9 +73,28 @@ impl FromWorld for Obstacles {
     }
 }
 
+#[derive(Component, Clone, ExtractComponent, AsBindGroup)]
+pub struct LevelsetTextures {
+    #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
+    pub levelset: Handle<Image>,
+    #[storage_texture(1, image_format = Rg32Float, access = ReadWrite)]
+    pub jump_flooding_seeds: Handle<Image>,
+}
+
+#[derive(Component, Clone, ExtractComponent, ShaderType)]
+pub struct JumpFloodingUniform {
+    pub step: u32,
+}
+
+#[derive(Component)]
+pub struct JumpFloodingUniformBuffer {
+    pub buffer: Vec<UniformBuffer<JumpFloodingUniform>>,
+}
+
 #[derive(Bundle)]
 pub struct FluidSimulationBundle {
     pub velocity_textures: VelocityTextures,
     pub grid_center_textures: GridCenterTextures,
     pub local_forces: LocalForces,
+    pub levelset_textures: LevelsetTextures,
 }

@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
 use bevy::render::extract_component::ExtractComponent;
+use bevy::render::render_resource::UniformBuffer;
+use bevy::render::renderer::RenderQueue;
 use bevy::{
     prelude::*,
     render::{
@@ -17,7 +19,8 @@ use bevy::{
 };
 
 use super::definition::{
-    GridCenterTextures, LocalForces, Obstacles, SimulationUniform, VelocityTextures,
+    FluidSettings, GridCenterTextures, JumpFloodingUniform, JumpFloodingUniformBuffer,
+    LevelsetTextures, LocalForces, Obstacles, SimulationUniform, VelocityTextures,
 };
 
 #[derive(Resource)]
@@ -31,11 +34,16 @@ pub(crate) struct FluidPipelines {
     pub jacobi_iteration_pipeline: CachedComputePipelineId,
     pub jacobi_iteration_reverse_pipeline: CachedComputePipelineId,
     pub solve_velocity_pipeline: CachedComputePipelineId,
+    pub recompute_levelset_initialization_pipeline: CachedComputePipelineId,
+    pub recompute_levelset_iteration_pipeline: CachedComputePipelineId,
+    pub recompute_levelset_solve_pipeline: CachedComputePipelineId,
     velocity_bind_group_layout: BindGroupLayout,
     grid_center_bind_group_layout: BindGroupLayout,
     local_forces_bind_group_layout: BindGroupLayout,
     uniform_bind_group_layout: BindGroupLayout,
     obstacles_bind_group_layout: BindGroupLayout,
+    levelset_bind_group_layout: BindGroupLayout,
+    jump_flooding_uniform_bind_group_layout: BindGroupLayout,
 }
 
 impl FromWorld for FluidPipelines {
@@ -55,6 +63,14 @@ impl FromWorld for FluidPipelines {
         let local_forces_bind_group_layout = LocalForces::bind_group_layout(render_device);
         let grid_center_bind_group_layout = GridCenterTextures::bind_group_layout(render_device);
         let obstacles_bind_group_layout = Obstacles::bind_group_layout(render_device);
+        let levelset_bind_group_layout = LevelsetTextures::bind_group_layout(render_device);
+        let jump_flooding_uniform_bind_group_layout = render_device.create_bind_group_layout(
+            Some("Create JumpFloodingUniformBindGroupLayout"),
+            &BindGroupLayoutEntries::single(
+                ShaderStages::COMPUTE,
+                uniform_buffer::<JumpFloodingUniform>(false),
+            ),
+        );
 
         let initialize_velocity_shader = asset_server.load("shaders/initialize_velocity.wgsl");
         let initialize_velocity_pipeline =
@@ -178,6 +194,45 @@ impl FromWorld for FluidPipelines {
                 entry_point: Cow::from("solve_velocity"),
             });
 
+        let recompute_levelset_initialization_shader =
+            asset_server.load("shaders/recompute_levelset/initialize.wgsl");
+        let recompute_levelset_initialization_pipeline =
+            pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+                label: Some(Cow::from("Queue RecomputeLevelsetInitializationPipeline")),
+                layout: vec![levelset_bind_group_layout.clone()],
+                push_constant_ranges: vec![],
+                shader: recompute_levelset_initialization_shader,
+                shader_defs: vec![],
+                entry_point: Cow::from("initialize"),
+            });
+
+        let recompute_levelset_iteration_shader =
+            asset_server.load("shaders/recompute_levelset/iterate.wgsl");
+        let recompute_levelset_iteration_pipeline =
+            pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+                label: Some(Cow::from("Queue RecomputeLevelsetIteratePipeline")),
+                layout: vec![
+                    levelset_bind_group_layout.clone(),
+                    jump_flooding_uniform_bind_group_layout.clone(),
+                ],
+                push_constant_ranges: vec![],
+                shader: recompute_levelset_iteration_shader,
+                shader_defs: vec![],
+                entry_point: Cow::from("iterate"),
+            });
+
+        let recompute_levelset_solve_shader =
+            asset_server.load("shaders/recompute_levelset/calculate_sdf.wgsl");
+        let recompute_levelset_solve_pipeline =
+            pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+                label: Some(Cow::from("Queue RecomputeLevelsetSolvePipeline")),
+                layout: vec![levelset_bind_group_layout.clone()],
+                push_constant_ranges: vec![],
+                shader: recompute_levelset_solve_shader,
+                shader_defs: vec![],
+                entry_point: Cow::from("calculate_sdf"),
+            });
+
         Self {
             initialize_velocity_pipeline,
             initialize_grid_center_pipeline,
@@ -188,11 +243,16 @@ impl FromWorld for FluidPipelines {
             jacobi_iteration_pipeline,
             jacobi_iteration_reverse_pipeline,
             solve_velocity_pipeline,
+            recompute_levelset_initialization_pipeline,
+            recompute_levelset_iteration_pipeline,
+            recompute_levelset_solve_pipeline,
             velocity_bind_group_layout,
             grid_center_bind_group_layout,
             local_forces_bind_group_layout,
             uniform_bind_group_layout,
             obstacles_bind_group_layout,
+            jump_flooding_uniform_bind_group_layout,
+            levelset_bind_group_layout,
         }
     }
 }
@@ -211,6 +271,48 @@ pub(crate) struct FluidBindGroupResources {
     pub obstacles_bind_group: BindGroup,
 }
 
+#[derive(Component, Clone)]
+pub(crate) struct RecomputeLevelsetBindGroups {
+    pub levelset_bind_group: BindGroup,
+}
+
+/// Different from [`FluidBindGroups`], [`DynamicUniformIndex`] will not be used.
+/// Here, several bindings for jump flooding steps for each component.
+/// However, only one index can be used per component on [`DynamicUniformIndex`].
+/// Therefore, array of bind groups per component is adopted here.
+#[derive(Component)]
+pub(crate) struct JumpFloodingUniformBindGroups {
+    pub jump_flooding_step_bind_groups: Box<[BindGroup]>,
+    // pub uniform_index: u32,
+}
+
+pub(super) fn prepare_resource_recompute_levelset(
+    mut commands: Commands,
+    render_device: Res<RenderDevice>,
+    render_queue: Res<RenderQueue>,
+    query: Query<(Entity, &FluidSettings)>,
+) {
+    for (entity, settings) in &query {
+        // steps for jump flooding algorithm: 1, 2, ..., 2^k, where: 2^k < max(size.0, size.1) <= 2^(k+1)
+        let max_power =
+            ((settings.size.0.max(settings.size.1) as f32).log2() - 1.0).floor() as usize;
+        let mut step = 2_u32.pow((max_power + 1) as u32);
+        let mut jump_flooding_buffer =
+            Vec::<UniformBuffer<JumpFloodingUniform>>::with_capacity(max_power + 1);
+        for _ in 0..max_power + 1 {
+            step /= 2;
+            jump_flooding_buffer.push(UniformBuffer::from(JumpFloodingUniform { step }));
+        }
+        for buffer in &mut jump_flooding_buffer {
+            buffer.write_buffer(&render_device, &render_queue);
+        }
+
+        commands.entity(entity).insert(JumpFloodingUniformBuffer {
+            buffer: jump_flooding_buffer,
+        });
+    }
+}
+
 pub(super) fn prepare_fluid_bind_groups(
     mut commands: Commands,
     pipelines: Res<FluidPipelines>,
@@ -221,13 +323,22 @@ pub(super) fn prepare_fluid_bind_groups(
         &GridCenterTextures,
         &LocalForces,
         &DynamicUniformIndex<SimulationUniform>,
+        &LevelsetTextures,
+        &JumpFloodingUniformBuffer,
     )>,
     render_device: Res<RenderDevice>,
     fallback_image: Res<FallbackImage>,
     gpu_images: Res<RenderAssets<GpuImage>>,
 ) {
-    for (entity, advection_textures, add_force_textures, local_forces, simulation_uniform_index) in
-        &query
+    for (
+        entity,
+        advection_textures,
+        add_force_textures,
+        local_forces,
+        simulation_uniform_index,
+        levelset_textures,
+        jump_flooding_uniform_buffer,
+    ) in &query
     {
         let simulation_uniform = simulation_uniform.uniforms();
         let uniform_bind_group = render_device.create_bind_group(
@@ -266,13 +377,41 @@ pub(super) fn prepare_fluid_bind_groups(
             .unwrap()
             .bind_group;
 
-        commands.entity(entity).insert(FluidBindGroups {
-            velocity_bind_group,
-            grid_center_bind_group,
-            local_forces_bind_group,
-            uniform_bind_group,
-            uniform_index: simulation_uniform_index.index(),
-        });
+        let mut jump_flooding_step_bind_groups =
+            Vec::with_capacity(jump_flooding_uniform_buffer.buffer.len());
+        for buffer in &jump_flooding_uniform_buffer.buffer {
+            jump_flooding_step_bind_groups.push(render_device.create_bind_group(
+                Some("Create JumpFloodingStepBindGroup"),
+                &pipelines.jump_flooding_uniform_bind_group_layout,
+                &BindGroupEntries::single(buffer.binding().unwrap()),
+            ));
+        }
+
+        let levelset_bind_group = levelset_textures
+            .as_bind_group(
+                &pipelines.levelset_bind_group_layout,
+                &render_device,
+                &gpu_images,
+                &fallback_image,
+            )
+            .unwrap()
+            .bind_group;
+
+        commands.entity(entity).insert((
+            FluidBindGroups {
+                velocity_bind_group,
+                grid_center_bind_group,
+                local_forces_bind_group,
+                uniform_bind_group,
+                uniform_index: simulation_uniform_index.index(),
+            },
+            RecomputeLevelsetBindGroups {
+                levelset_bind_group,
+            },
+            JumpFloodingUniformBindGroups {
+                jump_flooding_step_bind_groups: jump_flooding_step_bind_groups.into_boxed_slice(),
+            },
+        ));
     }
 }
 

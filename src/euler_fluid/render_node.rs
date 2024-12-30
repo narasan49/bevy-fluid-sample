@@ -8,7 +8,10 @@ use bevy::{
 
 use super::{
     definition::FluidSettings,
-    fluid_bind_group::{FluidBindGroupResources, FluidBindGroups, FluidPipelines},
+    fluid_bind_group::{
+        FluidBindGroupResources, FluidBindGroups, FluidPipelines, JumpFloodingUniformBindGroups,
+        RecomputeLevelsetBindGroups,
+    },
 };
 
 const WORKGROUP_SIZE: u32 = 8;
@@ -26,7 +29,13 @@ pub(crate) struct EulerFluidNode {
     state: State,
     // Query BindGroups components
     // Reference: bevy\crates\bevy_ui\src\render\render_pass.rs
-    query: QueryState<(Entity, &'static FluidSettings, &'static FluidBindGroups)>,
+    query: QueryState<(
+        Entity,
+        &'static FluidSettings,
+        &'static FluidBindGroups,
+        &'static RecomputeLevelsetBindGroups,
+        &'static JumpFloodingUniformBindGroups,
+    )>,
 }
 
 impl EulerFluidNode {
@@ -66,6 +75,9 @@ impl render_graph::Node for EulerFluidNode {
                     CachedPipelineState::Ok(_jacobi_iteration_pipeline),
                     CachedPipelineState::Ok(_jacobi_iteration_reverse_pipeline),
                     CachedPipelineState::Ok(_solve_velocity_pipeline),
+                    CachedPipelineState::Ok(_recompute_levelset_initialization_pipeline),
+                    CachedPipelineState::Ok(_recompute_levelset_iteration_pipeline),
+                    CachedPipelineState::Ok(_recompute_levelset_solve_pipeline),
                 ) = (
                     pipeline_cache.get_compute_pipeline_state(pipelines.update_grid_label_pipeline),
                     pipeline_cache.get_compute_pipeline_state(pipelines.advection_pipeline),
@@ -75,6 +87,14 @@ impl render_graph::Node for EulerFluidNode {
                     pipeline_cache
                         .get_compute_pipeline_state(pipelines.jacobi_iteration_reverse_pipeline),
                     pipeline_cache.get_compute_pipeline_state(pipelines.solve_velocity_pipeline),
+                    pipeline_cache.get_compute_pipeline_state(
+                        pipelines.recompute_levelset_initialization_pipeline,
+                    ),
+                    pipeline_cache.get_compute_pipeline_state(
+                        pipelines.recompute_levelset_iteration_pipeline,
+                    ),
+                    pipeline_cache
+                        .get_compute_pipeline_state(pipelines.recompute_levelset_solve_pipeline),
                 ) {
                     self.state = State::Update;
                 }
@@ -99,7 +119,7 @@ impl render_graph::Node for EulerFluidNode {
                 let initialize_grid_center_pipeline = pipeline_cache
                     .get_compute_pipeline(pipelines.initialize_grid_center_pipeline)
                     .unwrap();
-                for (_entity, settings, bind_groups) in self.query.iter_manual(world) {
+                for (_entity, settings, bind_groups, _, _) in self.query.iter_manual(world) {
                     let mut pass = render_context
                         .command_encoder()
                         .begin_compute_pass(&ComputePassDescriptor::default());
@@ -140,9 +160,25 @@ impl render_graph::Node for EulerFluidNode {
                 let solve_velocity_pipeline = pipeline_cache
                     .get_compute_pipeline(pipelines.solve_velocity_pipeline)
                     .unwrap();
+                let recompute_levelset_initialization_pipeline = pipeline_cache
+                    .get_compute_pipeline(pipelines.recompute_levelset_initialization_pipeline)
+                    .unwrap();
+                let recompute_levelset_itertation_pipeline = pipeline_cache
+                    .get_compute_pipeline(pipelines.recompute_levelset_iteration_pipeline)
+                    .unwrap();
+                let recompute_levelset_solve_pipeline = pipeline_cache
+                    .get_compute_pipeline(pipelines.recompute_levelset_solve_pipeline)
+                    .unwrap();
 
                 let bind_group_resources = world.resource::<FluidBindGroupResources>();
-                for (_entity, settings, bind_groups) in self.query.iter_manual(world) {
+                for (
+                    _entity,
+                    settings,
+                    bind_groups,
+                    recompute_levelset_bind_groups,
+                    jump_flooding_uniform_bind_groups,
+                ) in self.query.iter_manual(world)
+                {
                     let mut pass = render_context
                         .command_encoder()
                         .begin_compute_pass(&ComputePassDescriptor::default());
@@ -185,7 +221,7 @@ impl render_graph::Node for EulerFluidNode {
                         &bind_groups.uniform_bind_group,
                         &[bind_groups.uniform_index],
                     );
-                    for _ in 0..10 {
+                    for _ in 0..5 {
                         pass.set_pipeline(&jacobi_iteration_pipeline);
                         pass.dispatch_workgroups(
                             size.0 / WORKGROUP_SIZE,
@@ -208,6 +244,38 @@ impl render_graph::Node for EulerFluidNode {
                         &[bind_groups.uniform_index],
                     );
                     pass.set_bind_group(2, &bind_groups.grid_center_bind_group, &[]);
+                    pass.dispatch_workgroups(
+                        size.0 + 1,
+                        size.1 / WORKGROUP_SIZE / WORKGROUP_SIZE,
+                        1,
+                    );
+
+                    // recompute levelset
+                    pass.set_pipeline(&recompute_levelset_initialization_pipeline);
+                    pass.set_bind_group(
+                        0,
+                        &recompute_levelset_bind_groups.levelset_bind_group,
+                        &[],
+                    );
+
+                    pass.set_pipeline(&recompute_levelset_itertation_pipeline);
+                    for bind_group in
+                        &jump_flooding_uniform_bind_groups.jump_flooding_step_bind_groups
+                    {
+                        pass.set_bind_group(1, bind_group, &[]);
+                        pass.dispatch_workgroups(
+                            size.0 + 1,
+                            size.1 / WORKGROUP_SIZE / WORKGROUP_SIZE,
+                            1,
+                        );
+                    }
+
+                    pass.set_pipeline(&recompute_levelset_solve_pipeline);
+                    pass.set_bind_group(
+                        1,
+                        &recompute_levelset_bind_groups.levelset_bind_group,
+                        &[],
+                    );
                     pass.dispatch_workgroups(
                         size.0 + 1,
                         size.1 / WORKGROUP_SIZE / WORKGROUP_SIZE,
