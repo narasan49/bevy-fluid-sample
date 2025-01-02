@@ -12,6 +12,7 @@ pub struct FluidSettings {
     pub dx: f32,
     pub dt: f32,
     pub rho: f32,
+    pub gravity: Vec2,
     pub size: (u32, u32),
 }
 
@@ -20,6 +21,7 @@ pub struct SimulationUniform {
     pub dx: f32,
     pub dt: f32,
     pub rho: f32,
+    pub gravity: Vec2,
 }
 
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]

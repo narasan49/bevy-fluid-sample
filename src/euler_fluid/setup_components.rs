@@ -48,6 +48,7 @@ pub(crate) fn watch_fluid_component(
             dx: settings.dx,
             dt: settings.dt,
             rho: settings.rho,
+            gravity: settings.gravity,
         };
 
         let local_forces = LocalForces {
