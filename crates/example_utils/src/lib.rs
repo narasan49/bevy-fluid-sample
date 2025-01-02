@@ -21,7 +21,7 @@ pub fn mouse_motion(
 
             for (mut local_forces, settings, transform) in &mut q_fluid {
                 let position = screen_to_mesh_coordinate(
-                    cursor_position - transform.translation.xy(),
+                    cursor_position - transform.translation.xy() * Vec2::new(1.0, -1.0),
                     window,
                     q_camera.single(),
                     Vec2::new(settings.size.0 as f32, settings.size.1 as f32),
@@ -43,7 +43,7 @@ pub fn mouse_motion(
             .iter()
             .map(|touch| {
                 screen_to_mesh_coordinate(
-                    touch.position() - transform.translation.xy(),
+                    touch.position() - transform.translation.xy() * Vec2::new(1.0, -1.0),
                     q_window.single(),
                     q_camera.single(),
                     Vec2::new(settings.size.0 as f32, settings.size.1 as f32),
