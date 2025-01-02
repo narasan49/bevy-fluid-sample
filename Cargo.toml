@@ -12,6 +12,7 @@ bytemuck = "1.15.0"
 [dev-dependencies]
 iyes_perf_ui = "0.3.0"
 rand = "0.8.5"
+example_utils = { path = "crates/example_utils" }
 
 [profile.dev.package."*"]
 opt-level = 3
