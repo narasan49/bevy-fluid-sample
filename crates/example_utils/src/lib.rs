@@ -1,3 +1,5 @@
+pub mod fps_counter;
+
 use bevy::{input::mouse::MouseMotion, prelude::*, render::camera::CameraProjection, window::PrimaryWindow};
 use bevy_fluid::euler_fluid::definition::{LocalForces, FluidSettings};
 
