@@ -11,24 +11,40 @@ fn initialize(
     var min_distance = 10.0;
     var min_distance_seed = vec2<f32>(-1.0, -1.0);
 
-    for (var i: i32 = -1; i <= 1; i++) {
-        for (var j: i32 = -1; j <= 1; j++) {
-            if (i == 0 && j == 0) {
-                continue;
-            }
-            let neighbor = vec2<i32>(x.x + i, x.y + j);
-            let neighbor_level = textureLoad(levelset, neighbor).r;
-            if (sign(level) == sign(neighbor_level)) {
-                continue;
-            }
-            let distance_to_level_zero = level / (level - neighbor_level);
-
-            if (abs(distance_to_level_zero) < min_distance) {
-                min_distance = abs(distance_to_level_zero);
-                min_distance_seed = vec2<f32>(neighbor) + vec2<f32>(distance_to_level_zero * f32(i), distance_to_level_zero * f32(j));
-            }
-        }
+    if (level == 0.0) {
+        textureStore(seeds, x, vec4<f32>(vec2<f32>(x), 0, 0));
+        return;
     }
 
+    // find the point to intersect the zero level set
+    let dim = vec2<i32>(textureDimensions(levelset));
+    // array can be looped over only with a constant index
+    // let neibors = array<vec2<i32>, 4>(
+    //     x + vec2<i32>(-1, 0),
+    //     x + vec2<i32>(1, 0),
+    //     x + vec2<i32>(0, -1),
+    //     x + vec2<i32>(0, 1)
+    // );
+
+    // ToDo: Condider if the result is better when using 8 neighbors
+    for (var k: i32 = 0; k < 4; k++) {
+        let i = k / 2;
+        let j = k % 2;
+        let neighbor = x + vec2<i32>(i, j);
+        if (neighbor.x < 0 || neighbor.y < 0 || neighbor.x >= dim.x || neighbor.y >= dim.y) {
+            continue;
+        }
+        let neighbor_level = textureLoad(levelset, neighbor).r;
+        if (sign(level) == sign(neighbor_level)) {
+            continue;
+        }
+        let distance_to_level_zero = level / (level - neighbor_level);
+
+        if (abs(distance_to_level_zero) < min_distance) {
+            min_distance = abs(distance_to_level_zero);
+            min_distance_seed = vec2<f32>(x) + vec2<f32>(distance_to_level_zero * f32(i), distance_to_level_zero * f32(j));
+        }
+    }
+    
     textureStore(seeds, x, vec4<f32>(min_distance_seed, 0, 0));
 }

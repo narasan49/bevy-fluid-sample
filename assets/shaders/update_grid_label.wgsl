@@ -10,6 +10,8 @@ struct Circle {
 
 @group(2) @binding(0) var<storage, read> circles: array<Circle>;
 
+@group(3) @binding(0) var levelset: texture_storage_2d<r32float, read_write>;
+
 @compute
 @workgroup_size(8, 8, 1)
 fn update_grid_label(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -25,9 +27,13 @@ fn update_grid_label(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     let total = arrayLength(&circles);
+    let level = textureLoad(levelset, x).r;
 
     var i = 0u;
-    var label = 1u;
+    var label = 0u;
+    if level < 0.0 {
+        label = 1u;
+    }
     var u = 0.0;
     var v = 0.0;
     loop {

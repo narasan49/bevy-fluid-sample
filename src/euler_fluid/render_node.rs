@@ -119,7 +119,9 @@ impl render_graph::Node for EulerFluidNode {
                 let initialize_grid_center_pipeline = pipeline_cache
                     .get_compute_pipeline(pipelines.initialize_grid_center_pipeline)
                     .unwrap();
-                for (_entity, settings, bind_groups, _, _) in self.query.iter_manual(world) {
+                for (_entity, settings, bind_groups, recompute_levelset_bind_groups, _) in
+                    self.query.iter_manual(world)
+                {
                     let mut pass = render_context
                         .command_encoder()
                         .begin_compute_pass(&ComputePassDescriptor::default());
@@ -135,6 +137,11 @@ impl render_graph::Node for EulerFluidNode {
 
                     pass.set_pipeline(&initialize_grid_center_pipeline);
                     pass.set_bind_group(0, &bind_groups.grid_center_bind_group, &[]);
+                    pass.set_bind_group(
+                        1,
+                        &recompute_levelset_bind_groups.levelset_bind_group,
+                        &[],
+                    );
                     pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
                 }
             }
@@ -169,6 +176,9 @@ impl render_graph::Node for EulerFluidNode {
                 let recompute_levelset_solve_pipeline = pipeline_cache
                     .get_compute_pipeline(pipelines.recompute_levelset_solve_pipeline)
                     .unwrap();
+                let advect_levelset_pipeline = pipeline_cache
+                    .get_compute_pipeline(pipelines.advect_levelset_pipeline)
+                    .unwrap();
 
                 let bind_group_resources = world.resource::<FluidBindGroupResources>();
                 for (
@@ -188,6 +198,11 @@ impl render_graph::Node for EulerFluidNode {
                     pass.set_bind_group(0, &bind_groups.velocity_bind_group, &[]);
                     pass.set_bind_group(1, &bind_groups.grid_center_bind_group, &[]);
                     pass.set_bind_group(2, &bind_group_resources.obstacles_bind_group, &[]);
+                    pass.set_bind_group(
+                        3,
+                        &recompute_levelset_bind_groups.levelset_bind_group,
+                        &[],
+                    );
                     pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
 
                     pass.set_pipeline(&advection_pipeline);
@@ -257,6 +272,7 @@ impl render_graph::Node for EulerFluidNode {
                         &recompute_levelset_bind_groups.levelset_bind_group,
                         &[],
                     );
+                    pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
 
                     pass.set_pipeline(&recompute_levelset_itertation_pipeline);
                     for bind_group in
@@ -264,23 +280,28 @@ impl render_graph::Node for EulerFluidNode {
                     {
                         pass.set_bind_group(1, bind_group, &[]);
                         pass.dispatch_workgroups(
-                            size.0 + 1,
-                            size.1 / WORKGROUP_SIZE / WORKGROUP_SIZE,
+                            size.0 / WORKGROUP_SIZE,
+                            size.1 / WORKGROUP_SIZE,
                             1,
                         );
                     }
 
                     pass.set_pipeline(&recompute_levelset_solve_pipeline);
+                    pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
+
+                    pass.set_pipeline(&advect_levelset_pipeline);
+                    pass.set_bind_group(0, &bind_groups.velocity_bind_group, &[]);
                     pass.set_bind_group(
                         1,
                         &recompute_levelset_bind_groups.levelset_bind_group,
                         &[],
                     );
-                    pass.dispatch_workgroups(
-                        size.0 + 1,
-                        size.1 / WORKGROUP_SIZE / WORKGROUP_SIZE,
-                        1,
+                    pass.set_bind_group(
+                        2,
+                        &bind_groups.uniform_bind_group,
+                        &[bind_groups.uniform_index],
                     );
+                    pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
                 }
             }
         }

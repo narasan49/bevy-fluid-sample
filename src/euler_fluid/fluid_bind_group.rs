@@ -37,6 +37,7 @@ pub(crate) struct FluidPipelines {
     pub recompute_levelset_initialization_pipeline: CachedComputePipelineId,
     pub recompute_levelset_iteration_pipeline: CachedComputePipelineId,
     pub recompute_levelset_solve_pipeline: CachedComputePipelineId,
+    pub advect_levelset_pipeline: CachedComputePipelineId,
     velocity_bind_group_layout: BindGroupLayout,
     grid_center_bind_group_layout: BindGroupLayout,
     local_forces_bind_group_layout: BindGroupLayout,
@@ -88,7 +89,10 @@ impl FromWorld for FluidPipelines {
         let initialize_grid_center_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue InitializeGridCenterPipeline")),
-                layout: vec![grid_center_bind_group_layout.clone()],
+                layout: vec![
+                    grid_center_bind_group_layout.clone(),
+                    levelset_bind_group_layout.clone(),
+                ],
                 push_constant_ranges: vec![],
                 shader: initialize_grid_center_shader,
                 shader_defs: vec![],
@@ -103,6 +107,7 @@ impl FromWorld for FluidPipelines {
                     velocity_bind_group_layout.clone(),
                     grid_center_bind_group_layout.clone(),
                     obstacles_bind_group_layout.clone(),
+                    levelset_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
                 shader: update_grid_label_shader,
@@ -233,6 +238,21 @@ impl FromWorld for FluidPipelines {
                 entry_point: Cow::from("calculate_sdf"),
             });
 
+        let advect_levelset_shader = asset_server.load("shaders/advect_levelset.wgsl");
+        let advect_levelset_pipeline =
+            pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+                label: Some(Cow::from("Queue AdvectLevelsetPipeline")),
+                layout: vec![
+                    velocity_bind_group_layout.clone(),
+                    levelset_bind_group_layout.clone(),
+                    uniform_bind_group_layout.clone(),
+                ],
+                push_constant_ranges: vec![],
+                shader: advect_levelset_shader,
+                shader_defs: vec![],
+                entry_point: Cow::from("advect_levelset"),
+            });
+
         Self {
             initialize_velocity_pipeline,
             initialize_grid_center_pipeline,
@@ -246,6 +266,7 @@ impl FromWorld for FluidPipelines {
             recompute_levelset_initialization_pipeline,
             recompute_levelset_iteration_pipeline,
             recompute_levelset_solve_pipeline,
+            advect_levelset_pipeline,
             velocity_bind_group_layout,
             grid_center_bind_group_layout,
             local_forces_bind_group_layout,
