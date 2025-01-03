@@ -1,5 +1,7 @@
-
-use bevy::{diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin}, prelude::*};
+use bevy::{
+    diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin},
+    prelude::*,
+};
 
 #[derive(Component)]
 pub struct FpsRoot;
@@ -13,8 +15,7 @@ pub struct FpsCounterPlugin;
 
 impl Plugin for FpsCounterPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(FrameTimeDiagnosticsPlugin)
+        app.add_plugins(FrameTimeDiagnosticsPlugin)
             .add_systems(Startup, setup_fps_text)
             .add_systems(Update, update_fps_text);
     }

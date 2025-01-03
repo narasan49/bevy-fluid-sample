@@ -12,9 +12,7 @@ use bevy::{
 };
 
 use bevy_fluid::euler_fluid::{
-    definition::{
-        FluidSettings, LevelsetTextures, VelocityTextures,
-    },
+    definition::{FluidSettings, LevelsetTextures, VelocityTextures},
     fluid_material::VelocityMaterial,
     FluidPlugin,
 };
@@ -83,10 +81,7 @@ fn setup_scene(mut commands: Commands) {
 
 fn on_advection_initialized(
     mut commands: Commands,
-    query: Query<
-        (Entity, &LevelsetTextures, &VelocityTextures),
-        Added<LevelsetTextures>,
-    >,
+    query: Query<(Entity, &LevelsetTextures, &VelocityTextures), Added<LevelsetTextures>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<CustomMaterial>>,
     mut velocity_materials: ResMut<Assets<VelocityMaterial>>,
@@ -100,16 +95,14 @@ fn on_advection_initialized(
             scale: -100.0,
         });
 
-        commands.entity(entity).insert(
-            MaterialMesh2dBundle {
-                mesh: mesh.clone().into(),
-                transform: Transform::default()
-                    .with_translation(Vec3::new(SIZE.0 as f32 * -0.5, 0.0, 0.0))
-                    .with_scale(Vec3::new(SIZE.0 as f32, SIZE.1 as f32, 0.0)),
-                material,
-                ..default()
-            }
-        );
+        commands.entity(entity).insert(MaterialMesh2dBundle {
+            mesh: mesh.clone().into(),
+            transform: Transform::default()
+                .with_translation(Vec3::new(SIZE.0 as f32 * -0.5, 0.0, 0.0))
+                .with_scale(Vec3::new(SIZE.0 as f32, SIZE.1 as f32, 0.0)),
+            material,
+            ..default()
+        });
 
         let material_velocity = velocity_materials.add(VelocityMaterial {
             offset: 0.5,

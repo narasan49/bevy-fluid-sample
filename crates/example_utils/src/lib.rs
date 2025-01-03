@@ -1,7 +1,9 @@
 pub mod fps_counter;
 
-use bevy::{input::mouse::MouseMotion, prelude::*, render::camera::CameraProjection, window::PrimaryWindow};
-use bevy_fluid::euler_fluid::definition::{LocalForces, FluidSettings};
+use bevy::{
+    input::mouse::MouseMotion, prelude::*, render::camera::CameraProjection, window::PrimaryWindow,
+};
+use bevy_fluid::euler_fluid::definition::{FluidSettings, LocalForces};
 
 pub fn mouse_motion(
     mouse_button_input: Res<ButtonInput<MouseButton>>,
