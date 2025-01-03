@@ -28,8 +28,8 @@ fn initialize(
 
     // ToDo: Condider if the result is better when using 8 neighbors
     for (var k: i32 = 0; k < 4; k++) {
-        let i = k / 2;
-        let j = k % 2;
+        let i = select(-1, 1, k / 2 == 0);
+        let j = select(-1, 1, k / 2 == 1);
         let neighbor = x + vec2<i32>(i, j);
         if (neighbor.x < 0 || neighbor.y < 0 || neighbor.x >= dim.x || neighbor.y >= dim.y) {
             continue;
