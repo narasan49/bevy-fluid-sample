@@ -310,6 +310,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bytemuck",
+ "example_utils",
  "iyes_perf_ui",
  "rand",
 ]
@@ -1715,6 +1716,14 @@ checksum = "0f214dc438f977e6d4e3500aaa277f5ad94ca83fbbd9b1a15713ce2344ccc5a1"
 dependencies = [
  "event-listener 5.3.0",
  "pin-project-lite",
+]
+
+[[package]]
+name = "example_utils"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-fluid",
 ]
 
 [[package]]
