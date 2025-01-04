@@ -19,8 +19,9 @@ use bevy::{
 };
 
 use super::definition::{
-    FluidSettings, GridCenterTextures, JumpFloodingUniform, JumpFloodingUniformBuffer,
-    LevelsetTextures, LocalForces, Obstacles, SimulationUniform, VelocityTextures,
+    DivergenceTextures, FluidSettings, JumpFloodingSeedsTextures, JumpFloodingUniform,
+    JumpFloodingUniformBuffer, LevelsetTextures, LocalForces, Obstacles, PressureTextures,
+    SimulationUniform, VelocityTextures,
 };
 
 #[derive(Resource)]
@@ -39,11 +40,13 @@ pub(crate) struct FluidPipelines {
     pub recompute_levelset_solve_pipeline: CachedComputePipelineId,
     pub advect_levelset_pipeline: CachedComputePipelineId,
     velocity_bind_group_layout: BindGroupLayout,
-    grid_center_bind_group_layout: BindGroupLayout,
+    pressure_bind_group_layout: BindGroupLayout,
+    divergence_bind_group_layout: BindGroupLayout,
+    levelset_bind_group_layout: BindGroupLayout,
     local_forces_bind_group_layout: BindGroupLayout,
     uniform_bind_group_layout: BindGroupLayout,
     obstacles_bind_group_layout: BindGroupLayout,
-    levelset_bind_group_layout: BindGroupLayout,
+    jump_flooding_seeds_bind_group_layout: BindGroupLayout,
     jump_flooding_uniform_bind_group_layout: BindGroupLayout,
 }
 
@@ -62,9 +65,12 @@ impl FromWorld for FluidPipelines {
         );
         let velocity_bind_group_layout = VelocityTextures::bind_group_layout(render_device);
         let local_forces_bind_group_layout = LocalForces::bind_group_layout(render_device);
-        let grid_center_bind_group_layout = GridCenterTextures::bind_group_layout(render_device);
-        let obstacles_bind_group_layout = Obstacles::bind_group_layout(render_device);
+        let pressure_bind_group_layout = PressureTextures::bind_group_layout(render_device);
+        let divergence_bind_group_layout = DivergenceTextures::bind_group_layout(render_device);
         let levelset_bind_group_layout = LevelsetTextures::bind_group_layout(render_device);
+        let obstacles_bind_group_layout = Obstacles::bind_group_layout(render_device);
+        let jump_flooding_seeds_bind_group_layout =
+            JumpFloodingSeedsTextures::bind_group_layout(render_device);
         let jump_flooding_uniform_bind_group_layout = render_device.create_bind_group_layout(
             Some("Create JumpFloodingUniformBindGroupLayout"),
             &BindGroupLayoutEntries::single(
@@ -89,10 +95,7 @@ impl FromWorld for FluidPipelines {
         let initialize_grid_center_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue InitializeGridCenterPipeline")),
-                layout: vec![
-                    grid_center_bind_group_layout.clone(),
-                    levelset_bind_group_layout.clone(),
-                ],
+                layout: vec![levelset_bind_group_layout.clone()],
                 push_constant_ranges: vec![],
                 shader: initialize_grid_center_shader,
                 shader_defs: vec![],
@@ -105,9 +108,8 @@ impl FromWorld for FluidPipelines {
                 label: Some(Cow::from("Queue UpdateGridLabelPipeline")),
                 layout: vec![
                     velocity_bind_group_layout.clone(),
-                    grid_center_bind_group_layout.clone(),
-                    obstacles_bind_group_layout.clone(),
                     levelset_bind_group_layout.clone(),
+                    obstacles_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
                 shader: update_grid_label_shader,
@@ -120,8 +122,8 @@ impl FromWorld for FluidPipelines {
             label: Some(Cow::from("Queue AdvectionPipeline")),
             layout: vec![
                 velocity_bind_group_layout.clone(),
+                levelset_bind_group_layout.clone(),
                 uniform_bind_group_layout.clone(),
-                grid_center_bind_group_layout.clone(),
             ],
             push_constant_ranges: vec![],
             shader: advection_shader,
@@ -149,7 +151,8 @@ impl FromWorld for FluidPipelines {
                 label: Some(Cow::from("Queue DivergencePipeline")),
                 layout: vec![
                     velocity_bind_group_layout.clone(),
-                    grid_center_bind_group_layout.clone(),
+                    divergence_bind_group_layout.clone(),
+                    levelset_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
                 shader: divergence_shader,
@@ -163,7 +166,9 @@ impl FromWorld for FluidPipelines {
                 label: Some(Cow::from("Queue JacobiIterationPipeline")),
                 layout: vec![
                     uniform_bind_group_layout.clone(),
-                    grid_center_bind_group_layout.clone(),
+                    pressure_bind_group_layout.clone(),
+                    divergence_bind_group_layout.clone(),
+                    levelset_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
                 shader: jacobi_iteration_shader.clone(),
@@ -176,7 +181,9 @@ impl FromWorld for FluidPipelines {
                 label: Some(Cow::from("Queue JacobiIterationReversePipeline")),
                 layout: vec![
                     uniform_bind_group_layout.clone(),
-                    grid_center_bind_group_layout.clone(),
+                    pressure_bind_group_layout.clone(),
+                    divergence_bind_group_layout.clone(),
+                    levelset_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
                 shader: jacobi_iteration_shader,
@@ -191,7 +198,8 @@ impl FromWorld for FluidPipelines {
                 layout: vec![
                     velocity_bind_group_layout.clone(),
                     uniform_bind_group_layout.clone(),
-                    grid_center_bind_group_layout.clone(),
+                    pressure_bind_group_layout.clone(),
+                    levelset_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
                 shader: solve_velocity_shader,
@@ -204,7 +212,10 @@ impl FromWorld for FluidPipelines {
         let recompute_levelset_initialization_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue RecomputeLevelsetInitializationPipeline")),
-                layout: vec![levelset_bind_group_layout.clone()],
+                layout: vec![
+                    levelset_bind_group_layout.clone(),
+                    jump_flooding_seeds_bind_group_layout.clone(),
+                ],
                 push_constant_ranges: vec![],
                 shader: recompute_levelset_initialization_shader,
                 shader_defs: vec![],
@@ -217,7 +228,7 @@ impl FromWorld for FluidPipelines {
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue RecomputeLevelsetIteratePipeline")),
                 layout: vec![
-                    levelset_bind_group_layout.clone(),
+                    jump_flooding_seeds_bind_group_layout.clone(),
                     jump_flooding_uniform_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
@@ -231,7 +242,10 @@ impl FromWorld for FluidPipelines {
         let recompute_levelset_solve_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue RecomputeLevelsetSolvePipeline")),
-                layout: vec![levelset_bind_group_layout.clone()],
+                layout: vec![
+                    levelset_bind_group_layout.clone(),
+                    jump_flooding_seeds_bind_group_layout.clone(),
+                ],
                 push_constant_ranges: vec![],
                 shader: recompute_levelset_solve_shader,
                 shader_defs: vec![],
@@ -268,12 +282,14 @@ impl FromWorld for FluidPipelines {
             recompute_levelset_solve_pipeline,
             advect_levelset_pipeline,
             velocity_bind_group_layout,
-            grid_center_bind_group_layout,
+            pressure_bind_group_layout,
+            divergence_bind_group_layout,
+            levelset_bind_group_layout,
             local_forces_bind_group_layout,
             uniform_bind_group_layout,
             obstacles_bind_group_layout,
             jump_flooding_uniform_bind_group_layout,
-            levelset_bind_group_layout,
+            jump_flooding_seeds_bind_group_layout,
         }
     }
 }
@@ -281,8 +297,11 @@ impl FromWorld for FluidPipelines {
 #[derive(Component, Clone, ExtractComponent)]
 pub(crate) struct FluidBindGroups {
     pub velocity_bind_group: BindGroup,
-    pub grid_center_bind_group: BindGroup,
+    pub pressure_bind_group: BindGroup,
+    pub divergence_bind_group: BindGroup,
     pub local_forces_bind_group: BindGroup,
+    pub levelset_bind_group: BindGroup,
+    pub jump_flooding_seeds_bind_group: BindGroup,
     pub uniform_bind_group: BindGroup,
     pub uniform_index: u32,
 }
@@ -290,11 +309,6 @@ pub(crate) struct FluidBindGroups {
 #[derive(Resource)]
 pub(crate) struct FluidBindGroupResources {
     pub obstacles_bind_group: BindGroup,
-}
-
-#[derive(Component, Clone)]
-pub(crate) struct RecomputeLevelsetBindGroups {
-    pub levelset_bind_group: BindGroup,
 }
 
 /// Different from [`FluidBindGroups`], [`DynamicUniformIndex`] will not be used.
@@ -341,10 +355,12 @@ pub(super) fn prepare_fluid_bind_groups(
     query: Query<(
         Entity,
         &VelocityTextures,
-        &GridCenterTextures,
+        &PressureTextures,
+        &DivergenceTextures,
+        &LevelsetTextures,
         &LocalForces,
         &DynamicUniformIndex<SimulationUniform>,
-        &LevelsetTextures,
+        &JumpFloodingSeedsTextures,
         &JumpFloodingUniformBuffer,
     )>,
     render_device: Res<RenderDevice>,
@@ -353,11 +369,13 @@ pub(super) fn prepare_fluid_bind_groups(
 ) {
     for (
         entity,
-        advection_textures,
-        add_force_textures,
+        velocity_textures,
+        pressure_textures,
+        divergence_textures,
+        levelset_textures,
         local_forces,
         simulation_uniform_index,
-        levelset_textures,
+        jump_flooding_seeds_textures,
         jump_flooding_uniform_buffer,
     ) in &query
     {
@@ -368,7 +386,7 @@ pub(super) fn prepare_fluid_bind_groups(
             &BindGroupEntries::single(simulation_uniform),
         );
 
-        let velocity_bind_group = advection_textures
+        let velocity_bind_group = velocity_textures
             .as_bind_group(
                 &pipelines.velocity_bind_group_layout,
                 &render_device,
@@ -378,9 +396,19 @@ pub(super) fn prepare_fluid_bind_groups(
             .unwrap()
             .bind_group;
 
-        let grid_center_bind_group = add_force_textures
+        let pressure_bind_group = pressure_textures
             .as_bind_group(
-                &pipelines.grid_center_bind_group_layout,
+                &pipelines.pressure_bind_group_layout,
+                &render_device,
+                &gpu_images,
+                &fallback_image,
+            )
+            .unwrap()
+            .bind_group;
+
+        let divergence_bind_group = divergence_textures
+            .as_bind_group(
+                &pipelines.divergence_bind_group_layout,
                 &render_device,
                 &gpu_images,
                 &fallback_image,
@@ -418,16 +446,26 @@ pub(super) fn prepare_fluid_bind_groups(
             .unwrap()
             .bind_group;
 
+        let jump_flooding_seeds_bind_group = jump_flooding_seeds_textures
+            .as_bind_group(
+                &pipelines.jump_flooding_seeds_bind_group_layout,
+                &render_device,
+                &gpu_images,
+                &fallback_image,
+            )
+            .unwrap()
+            .bind_group;
+
         commands.entity(entity).insert((
             FluidBindGroups {
                 velocity_bind_group,
-                grid_center_bind_group,
+                pressure_bind_group,
+                divergence_bind_group,
                 local_forces_bind_group,
+                levelset_bind_group,
+                jump_flooding_seeds_bind_group,
                 uniform_bind_group,
                 uniform_index: simulation_uniform_index.index(),
-            },
-            RecomputeLevelsetBindGroups {
-                levelset_bind_group,
             },
             JumpFloodingUniformBindGroups {
                 jump_flooding_step_bind_groups: jump_flooding_step_bind_groups.into_boxed_slice(),

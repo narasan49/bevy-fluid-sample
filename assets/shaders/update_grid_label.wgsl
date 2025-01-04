@@ -6,11 +6,11 @@ struct Circle {
 @group(0) @binding(0) var u0: texture_storage_2d<r32float, read_write>;
 @group(0) @binding(1) var v0: texture_storage_2d<r32float, read_write>;
 
-@group(1) @binding(3) var grid_label: texture_storage_2d<r32uint, read_write>;
+@group(1) @binding(0) var levelset: texture_storage_2d<r32float, read_write>;
+@group(1) @binding(1) var grid_label: texture_storage_2d<r32uint, read_write>;
 
 @group(2) @binding(0) var<storage, read> circles: array<Circle>;
 
-@group(3) @binding(0) var levelset: texture_storage_2d<r32float, read_write>;
 
 @compute
 @workgroup_size(8, 8, 1)

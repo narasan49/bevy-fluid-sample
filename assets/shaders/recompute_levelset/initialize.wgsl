@@ -1,5 +1,12 @@
 @group(0) @binding(0) var levelset: texture_storage_2d<r32float, read_write>;
-@group(0) @binding(1) var seeds: texture_storage_2d<rg32float, read_write>;
+
+@group(1) @binding(0) var seeds_x: texture_storage_2d<r32float, read_write>;
+@group(1) @binding(1) var seeds_y: texture_storage_2d<r32float, read_write>;
+
+fn set_seed(x: vec2<i32>, seed: vec2<f32>) {
+    textureStore(seeds_x, x, vec4<f32>(seed.x, 0.0, 0.0, 0.0));
+    textureStore(seeds_y, x, vec4<f32>(seed.y, 0.0, 0.0, 0.0));
+}
 
 @compute
 @workgroup_size(8, 8, 1)
@@ -12,7 +19,7 @@ fn initialize(
     var min_distance_seed = vec2<f32>(-1.0, -1.0);
 
     if (level == 0.0) {
-        textureStore(seeds, x, vec4<f32>(vec2<f32>(x), 0, 0));
+        set_seed(x, vec2<f32>(x));
         return;
     }
 
@@ -46,5 +53,5 @@ fn initialize(
         }
     }
     
-    textureStore(seeds, x, vec4<f32>(min_distance_seed, 0, 0));
+    set_seed(x, min_distance_seed);
 }

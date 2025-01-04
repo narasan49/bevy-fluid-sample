@@ -2,12 +2,14 @@ use bevy::{prelude::*, render::render_resource::TextureFormat};
 
 use crate::{
     euler_fluid::definition::{
-        FluidSimulationBundle, GridCenterTextures, LocalForces, SimulationUniform, VelocityTextures,
+        FluidSimulationBundle, LocalForces, PressureTextures, SimulationUniform, VelocityTextures,
     },
     texture::NewTexture,
 };
 
-use super::definition::{FluidSettings, LevelsetTextures};
+use super::definition::{
+    DivergenceTextures, FluidSettings, JumpFloodingSeedsTextures, LevelsetTextures,
+};
 
 pub(crate) fn watch_fluid_component(
     mut commands: Commands,
@@ -33,14 +35,17 @@ pub(crate) fn watch_fluid_component(
         let grid_label = images.new_texture_storage(size, TextureFormat::R32Uint);
 
         let levelset = images.new_texture_storage(size, TextureFormat::R32Float);
-        let jump_flooding_seeds = images.new_texture_storage(size, TextureFormat::Rg32Float);
+        let jump_flooding_seeds_x = images.new_texture_storage(size, TextureFormat::R32Float);
+        let jump_flooding_seeds_y = images.new_texture_storage(size, TextureFormat::R32Float);
 
         let velocity_textures = VelocityTextures { u0, v0, u1, v1 };
 
-        let grid_center_textures = GridCenterTextures {
-            p0,
-            p1,
-            div,
+        let pressure_textures = PressureTextures { p0, p1 };
+
+        let divergence_textures = DivergenceTextures { div };
+
+        let levelset_textures = LevelsetTextures {
+            levelset,
             grid_label,
         };
 
@@ -56,18 +61,20 @@ pub(crate) fn watch_fluid_component(
             position: vec![],
         };
 
-        let levelset_textures = LevelsetTextures {
-            levelset,
-            jump_flooding_seeds,
+        let jump_flooding_seeds_textures = JumpFloodingSeedsTextures {
+            jump_flooding_seeds_x,
+            jump_flooding_seeds_y,
         };
 
         commands
             .entity(entity)
             .insert(FluidSimulationBundle {
                 velocity_textures,
-                grid_center_textures,
+                pressure_textures,
+                divergence_textures,
                 local_forces,
                 levelset_textures,
+                jump_flooding_seeds_textures,
             })
             .insert(uniform);
     }

@@ -10,7 +10,6 @@ use super::{
     definition::FluidSettings,
     fluid_bind_group::{
         FluidBindGroupResources, FluidBindGroups, FluidPipelines, JumpFloodingUniformBindGroups,
-        RecomputeLevelsetBindGroups,
     },
 };
 
@@ -33,7 +32,6 @@ pub(crate) struct EulerFluidNode {
         Entity,
         &'static FluidSettings,
         &'static FluidBindGroups,
-        &'static RecomputeLevelsetBindGroups,
         &'static JumpFloodingUniformBindGroups,
     )>,
 }
@@ -119,9 +117,7 @@ impl render_graph::Node for EulerFluidNode {
                 let initialize_grid_center_pipeline = pipeline_cache
                     .get_compute_pipeline(pipelines.initialize_grid_center_pipeline)
                     .unwrap();
-                for (_entity, settings, bind_groups, recompute_levelset_bind_groups, _) in
-                    self.query.iter_manual(world)
-                {
+                for (_entity, settings, bind_groups, _) in self.query.iter_manual(world) {
                     let mut pass = render_context
                         .command_encoder()
                         .begin_compute_pass(&ComputePassDescriptor::default());
@@ -136,12 +132,8 @@ impl render_graph::Node for EulerFluidNode {
                     );
 
                     pass.set_pipeline(&initialize_grid_center_pipeline);
-                    pass.set_bind_group(0, &bind_groups.grid_center_bind_group, &[]);
-                    pass.set_bind_group(
-                        1,
-                        &recompute_levelset_bind_groups.levelset_bind_group,
-                        &[],
-                    );
+                    pass.set_bind_group(0, &bind_groups.levelset_bind_group, &[]);
+                    pass.set_bind_group(1, &bind_groups.levelset_bind_group, &[]);
                     pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
                 }
             }
@@ -181,13 +173,8 @@ impl render_graph::Node for EulerFluidNode {
                     .unwrap();
 
                 let bind_group_resources = world.resource::<FluidBindGroupResources>();
-                for (
-                    _entity,
-                    settings,
-                    bind_groups,
-                    recompute_levelset_bind_groups,
-                    jump_flooding_uniform_bind_groups,
-                ) in self.query.iter_manual(world)
+                for (_entity, settings, bind_groups, jump_flooding_uniform_bind_groups) in
+                    self.query.iter_manual(world)
                 {
                     let mut pass = render_context
                         .command_encoder()
@@ -196,23 +183,18 @@ impl render_graph::Node for EulerFluidNode {
 
                     pass.set_pipeline(&update_grid_label_pipeline);
                     pass.set_bind_group(0, &bind_groups.velocity_bind_group, &[]);
-                    pass.set_bind_group(1, &bind_groups.grid_center_bind_group, &[]);
+                    pass.set_bind_group(1, &bind_groups.levelset_bind_group, &[]);
                     pass.set_bind_group(2, &bind_group_resources.obstacles_bind_group, &[]);
-                    pass.set_bind_group(
-                        3,
-                        &recompute_levelset_bind_groups.levelset_bind_group,
-                        &[],
-                    );
                     pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
 
                     pass.set_pipeline(&advection_pipeline);
                     pass.set_bind_group(0, &bind_groups.velocity_bind_group, &[]);
+                    pass.set_bind_group(1, &bind_groups.levelset_bind_group, &[]);
                     pass.set_bind_group(
-                        1,
+                        2,
                         &bind_groups.uniform_bind_group,
                         &[bind_groups.uniform_index],
                     );
-                    pass.set_bind_group(2, &bind_groups.grid_center_bind_group, &[]);
                     pass.dispatch_workgroups(
                         size.0 + 1,
                         size.1 / WORKGROUP_SIZE / WORKGROUP_SIZE,
@@ -220,6 +202,11 @@ impl render_graph::Node for EulerFluidNode {
                     );
 
                     pass.set_pipeline(&add_force_pipeline);
+                    pass.set_bind_group(
+                        1,
+                        &bind_groups.uniform_bind_group,
+                        &[bind_groups.uniform_index],
+                    );
                     pass.set_bind_group(2, &bind_groups.local_forces_bind_group, &[]);
                     pass.dispatch_workgroups(
                         size.0 + 1,
@@ -228,7 +215,8 @@ impl render_graph::Node for EulerFluidNode {
                     );
 
                     pass.set_pipeline(&divergence_pipeline);
-                    pass.set_bind_group(1, &bind_groups.grid_center_bind_group, &[]);
+                    pass.set_bind_group(1, &bind_groups.divergence_bind_group, &[]);
+                    pass.set_bind_group(2, &bind_groups.levelset_bind_group, &[]);
                     pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
 
                     pass.set_bind_group(
@@ -236,6 +224,9 @@ impl render_graph::Node for EulerFluidNode {
                         &bind_groups.uniform_bind_group,
                         &[bind_groups.uniform_index],
                     );
+                    pass.set_bind_group(1, &bind_groups.pressure_bind_group, &[]);
+                    pass.set_bind_group(2, &bind_groups.divergence_bind_group, &[]);
+                    pass.set_bind_group(3, &bind_groups.levelset_bind_group, &[]);
                     for _ in 0..5 {
                         pass.set_pipeline(&jacobi_iteration_pipeline);
                         pass.dispatch_workgroups(
@@ -258,7 +249,8 @@ impl render_graph::Node for EulerFluidNode {
                         &bind_groups.uniform_bind_group,
                         &[bind_groups.uniform_index],
                     );
-                    pass.set_bind_group(2, &bind_groups.grid_center_bind_group, &[]);
+                    pass.set_bind_group(2, &bind_groups.pressure_bind_group, &[]);
+                    pass.set_bind_group(3, &bind_groups.levelset_bind_group, &[]);
                     pass.dispatch_workgroups(
                         size.0 + 1,
                         size.1 / WORKGROUP_SIZE / WORKGROUP_SIZE,
@@ -267,14 +259,12 @@ impl render_graph::Node for EulerFluidNode {
 
                     // recompute levelset
                     pass.set_pipeline(&recompute_levelset_initialization_pipeline);
-                    pass.set_bind_group(
-                        0,
-                        &recompute_levelset_bind_groups.levelset_bind_group,
-                        &[],
-                    );
+                    pass.set_bind_group(0, &bind_groups.levelset_bind_group, &[]);
+                    pass.set_bind_group(1, &bind_groups.jump_flooding_seeds_bind_group, &[]);
                     pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
 
                     pass.set_pipeline(&recompute_levelset_itertation_pipeline);
+                    pass.set_bind_group(0, &bind_groups.jump_flooding_seeds_bind_group, &[]);
                     for bind_group in
                         &jump_flooding_uniform_bind_groups.jump_flooding_step_bind_groups
                     {
@@ -287,15 +277,13 @@ impl render_graph::Node for EulerFluidNode {
                     }
 
                     pass.set_pipeline(&recompute_levelset_solve_pipeline);
+                    pass.set_bind_group(0, &bind_groups.levelset_bind_group, &[]);
+                    pass.set_bind_group(1, &bind_groups.jump_flooding_seeds_bind_group, &[]);
                     pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
 
                     pass.set_pipeline(&advect_levelset_pipeline);
                     pass.set_bind_group(0, &bind_groups.velocity_bind_group, &[]);
-                    pass.set_bind_group(
-                        1,
-                        &recompute_levelset_bind_groups.levelset_bind_group,
-                        &[],
-                    );
+                    pass.set_bind_group(1, &bind_groups.levelset_bind_group, &[]);
                     pass.set_bind_group(
                         2,
                         &bind_groups.uniform_bind_group,

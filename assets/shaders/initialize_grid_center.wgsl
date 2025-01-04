@@ -1,6 +1,5 @@
-@group(0) @binding(3) var grid_label: texture_storage_2d<r32uint, read_write>;
-
-@group(1) @binding(0) var levelset: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(0) var levelset: texture_storage_2d<r32float, read_write>;
+@group(0) @binding(1) var grid_label: texture_storage_2d<r32uint, read_write>;
 
 @compute
 @workgroup_size(8, 8, 1)

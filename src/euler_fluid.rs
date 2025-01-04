@@ -21,7 +21,8 @@ use bevy::{
     sprite::Material2dPlugin,
 };
 use definition::{
-    CircleObstacle, GridCenterTextures, LocalForces, Obstacles, SimulationUniform, VelocityTextures,
+    CircleObstacle, DivergenceTextures, JumpFloodingSeedsTextures, LocalForces, Obstacles,
+    PressureTextures, SimulationUniform, VelocityTextures,
 };
 use fluid_bind_group::FluidPipelines;
 use fluid_material::VelocityMaterial;
@@ -45,11 +46,13 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractComponentPlugin::<FluidSettings>::default())
             .add_plugins(ExtractComponentPlugin::<FluidBindGroups>::default())
             .add_plugins(ExtractComponentPlugin::<VelocityTextures>::default())
-            .add_plugins(ExtractComponentPlugin::<GridCenterTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<PressureTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<DivergenceTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<LevelsetTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<JumpFloodingSeedsTextures>::default())
             .add_plugins(ExtractComponentPlugin::<LocalForces>::default())
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
-            .add_plugins(ExtractComponentPlugin::<LevelsetTextures>::default())
             .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
             .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
             .add_systems(Update, update_geometry)

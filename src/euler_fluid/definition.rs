@@ -37,14 +37,26 @@ pub struct VelocityTextures {
 }
 
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]
-pub struct GridCenterTextures {
+pub struct PressureTextures {
     #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
     pub p0: Handle<Image>,
     #[storage_texture(1, image_format = R32Float, access = ReadWrite)]
     pub p1: Handle<Image>,
-    #[storage_texture(2, image_format = R32Float, access = ReadWrite)]
+}
+
+#[derive(Component, Clone, ExtractComponent, AsBindGroup)]
+pub struct DivergenceTextures {
+    #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
     pub div: Handle<Image>,
-    #[storage_texture(3, image_format = R32Uint, access = ReadWrite)]
+}
+
+#[derive(Component, Clone, ExtractComponent, AsBindGroup)]
+pub struct LevelsetTextures {
+    // levelset between fluid and empty grids. 0: fluid interface, positive: empty grids, negative: fluid grids.
+    #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
+    pub levelset: Handle<Image>,
+    // grid label which describe grid state. 0: empty, 1: fluid, 2: solid.
+    #[storage_texture(1, image_format = R32Uint, access = ReadWrite)]
     pub grid_label: Handle<Image>,
 }
 
@@ -76,11 +88,13 @@ impl FromWorld for Obstacles {
 }
 
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]
-pub struct LevelsetTextures {
+pub struct JumpFloodingSeedsTextures {
+    /// Note: Only R32Float, R32Sint, and R32Uint storage textures can have ReadWrite access on WebGPU.
+    /// https://webgpufundamentals.org/webgpu/lessons/webgpu-storage-textures.html
     #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
-    pub levelset: Handle<Image>,
-    #[storage_texture(1, image_format = Rg32Float, access = ReadWrite)]
-    pub jump_flooding_seeds: Handle<Image>,
+    pub jump_flooding_seeds_x: Handle<Image>,
+    #[storage_texture(1, image_format = R32Float, access = ReadWrite)]
+    pub jump_flooding_seeds_y: Handle<Image>,
 }
 
 #[derive(Component, Clone, ExtractComponent, ShaderType)]
@@ -96,7 +110,9 @@ pub struct JumpFloodingUniformBuffer {
 #[derive(Bundle)]
 pub struct FluidSimulationBundle {
     pub velocity_textures: VelocityTextures,
-    pub grid_center_textures: GridCenterTextures,
-    pub local_forces: LocalForces,
+    pub pressure_textures: PressureTextures,
+    pub divergence_textures: DivergenceTextures,
     pub levelset_textures: LevelsetTextures,
+    pub local_forces: LocalForces,
+    pub jump_flooding_seeds_textures: JumpFloodingSeedsTextures,
 }
