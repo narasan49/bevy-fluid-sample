@@ -122,16 +122,14 @@ fn on_advection_initialized(
         });
 
         // Draw labels for each panel
-        commands.spawn(
-            TextBundle::from_section(
-                "Left: Surface, Right: Velocity",
-                TextStyle {
-                    font_size: 20.0,
-                    color: Color::WHITE,
-                    ..default()
-                },
-            ),
-        );
+        commands.spawn(TextBundle::from_section(
+            "Left: Surface, Right: Velocity",
+            TextStyle {
+                font_size: 20.0,
+                color: Color::WHITE,
+                ..default()
+            },
+        ));
     }
 }
 
