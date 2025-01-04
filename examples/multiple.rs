@@ -80,6 +80,7 @@ fn setup_scene(mut commands: Commands) {
                     rho: 1.293f32,
                     gravity: Vec2::ZERO,
                     size: (size, size),
+                    initial_fluid_level: 1.0f32,
                 })
                 .insert(
                     Transform::default()

@@ -133,7 +133,11 @@ impl render_graph::Node for EulerFluidNode {
 
                     pass.set_pipeline(&initialize_grid_center_pipeline);
                     pass.set_bind_group(0, &bind_groups.levelset_bind_group, &[]);
-                    pass.set_bind_group(1, &bind_groups.levelset_bind_group, &[]);
+                    pass.set_bind_group(
+                        1,
+                        &bind_groups.uniform_bind_group,
+                        &[bind_groups.uniform_index],
+                    );
                     pass.dispatch_workgroups(size.0 / WORKGROUP_SIZE, size.1 / WORKGROUP_SIZE, 1);
                 }
             }

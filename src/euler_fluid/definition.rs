@@ -14,6 +14,9 @@ pub struct FluidSettings {
     pub rho: f32,
     pub gravity: Vec2,
     pub size: (u32, u32),
+    /// Initialize fluid level with specified value.
+    /// Valid range: 0.0 (empty) - 1.0 (filled with fluid).
+    pub initial_fluid_level: f32,
 }
 
 #[derive(Component, ExtractComponent, ShaderType, Clone, Copy, Default)]
@@ -22,6 +25,7 @@ pub struct SimulationUniform {
     pub dt: f32,
     pub rho: f32,
     pub gravity: Vec2,
+    pub initial_fluid_level: f32,
 }
 
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]

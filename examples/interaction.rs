@@ -77,6 +77,7 @@ fn setup_scene(mut commands: Commands) {
         rho: 1.293f32, // water
         gravity: Vec2::ZERO,
         size: (512, 512),
+        initial_fluid_level: 1.0f32,
     });
 }
 

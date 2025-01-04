@@ -95,7 +95,10 @@ impl FromWorld for FluidPipelines {
         let initialize_grid_center_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue InitializeGridCenterPipeline")),
-                layout: vec![levelset_bind_group_layout.clone()],
+                layout: vec![
+                    levelset_bind_group_layout.clone(),
+                    uniform_bind_group_layout.clone(),
+                ],
                 push_constant_ranges: vec![],
                 shader: initialize_grid_center_shader,
                 shader_defs: vec![],
