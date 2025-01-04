@@ -17,6 +17,8 @@ fn add_force(
     let x_v = vec2<i32>(x_u.y, x_u.x);
     var n = arrayLength(&force);
     var net_force = vec2<f32>(0.0, 0.0);
+    net_force.y = constants.gravity.y;
+    net_force.x = constants.gravity.x;
 
     loop {
         if (n == 0) {

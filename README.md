@@ -5,8 +5,15 @@ This project is a fluid simulation sample built using the Bevy engine.
 Try it on [here](https://narasan49.github.io/bevy-fluid-sample/)!
 
 ## Features
-- [x] Invicid, incompressible 2D fluid simulation
-- [x] One-way solid body to fluid interaction
+- [x] Incompressible 2D fluid simulation
+- [ ] Viscosity
+- [ ] Fluid surface
+  - [x] Basic implementation
+  - [ ] Mass conservation
+  - [ ] Fluid source/drain
+- [ ] Solid body interaction
+  - [x] One-way solid body to fluid interaction
+  - [ ] Two-way coupling with solid body and fluid
 
 ## Getting Started
 
@@ -44,6 +51,12 @@ I have some examples to demonstrate my fluid simulation:
       cargo run --example multiple
       ```
       ![img](./docs/multiple_fluids.png)
+
+    - **Fluid surface**
+      ```ps1
+      cargo run --example water_surface
+      ```
+      ![img](./docs/bevy-fluid-surface.gif)
 
 ## Acknowledgments
 The simulation is inspired by and based on the algorithms described in these books:

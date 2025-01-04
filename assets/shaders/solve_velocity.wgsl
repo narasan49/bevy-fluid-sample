@@ -8,7 +8,8 @@
 @group(1) @binding(0) var<uniform> constants: SimulationUniform;
 
 @group(2) @binding(1) var p1: texture_storage_2d<r32float, read_write>;
-@group(2) @binding(3) var grid_label: texture_storage_2d<r32uint, read_write>;
+
+@group(3) @binding(1) var grid_label: texture_storage_2d<r32uint, read_write>;
 
 @compute
 @workgroup_size(1, 64, 1)
