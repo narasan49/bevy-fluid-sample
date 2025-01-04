@@ -120,6 +120,18 @@ fn on_advection_initialized(
             material: material_velocity,
             ..Default::default()
         });
+
+        // Draw labels for each panel
+        commands.spawn(
+            TextBundle::from_section(
+                "Left: Surface, Right: Velocity",
+                TextStyle {
+                    font_size: 20.0,
+                    color: Color::WHITE,
+                    ..default()
+                },
+            ),
+        );
     }
 }
 
