@@ -5,7 +5,7 @@ pub mod geometry;
 pub mod render_node;
 pub mod setup_components;
 
-use crate::euler_fluid::definition::FluidSettings;
+use crate::euler_fluid::definition::{FluidSettings, LevelsetTextures};
 use crate::euler_fluid::fluid_bind_group::FluidBindGroups;
 use bevy::{
     asset::load_internal_asset,
@@ -21,7 +21,8 @@ use bevy::{
     sprite::Material2dPlugin,
 };
 use definition::{
-    CircleObstacle, GridCenterTextures, LocalForces, Obstacles, SimulationUniform, VelocityTextures,
+    CircleObstacle, DivergenceTextures, JumpFloodingSeedsTextures, LocalForces, Obstacles,
+    PressureTextures, SimulationUniform, VelocityTextures,
 };
 use fluid_bind_group::FluidPipelines;
 use fluid_material::VelocityMaterial;
@@ -45,7 +46,10 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractComponentPlugin::<FluidSettings>::default())
             .add_plugins(ExtractComponentPlugin::<FluidBindGroups>::default())
             .add_plugins(ExtractComponentPlugin::<VelocityTextures>::default())
-            .add_plugins(ExtractComponentPlugin::<GridCenterTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<PressureTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<DivergenceTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<LevelsetTextures>::default())
+            .add_plugins(ExtractComponentPlugin::<JumpFloodingSeedsTextures>::default())
             .add_plugins(ExtractComponentPlugin::<LocalForces>::default())
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
@@ -56,6 +60,11 @@ impl Plugin for FluidPlugin {
 
         let render_app = app.sub_app_mut(RenderApp);
         render_app
+            .add_systems(
+                Render,
+                fluid_bind_group::prepare_resource_recompute_levelset
+                    .in_set(RenderSet::PrepareResources),
+            )
             .add_systems(
                 Render,
                 fluid_bind_group::prepare_fluid_bind_groups.in_set(RenderSet::PrepareBindGroups),
