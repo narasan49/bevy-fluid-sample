@@ -141,6 +141,7 @@ impl FromWorld for FluidPipelines {
                 velocity_bind_group_layout.clone(),
                 uniform_bind_group_layout.clone(),
                 local_forces_bind_group_layout.clone(),
+                levelset_bind_group_layout.clone(),
             ],
             push_constant_ranges: vec![],
             shader: add_force_shader,
