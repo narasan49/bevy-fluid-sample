@@ -212,6 +212,7 @@ impl render_graph::Node for EulerFluidNode {
                         &[bind_groups.uniform_index],
                     );
                     pass.set_bind_group(2, &bind_groups.local_forces_bind_group, &[]);
+                    pass.set_bind_group(3, &bind_groups.levelset_bind_group, &[]);
                     pass.dispatch_workgroups(
                         size.0 + 1,
                         size.1 / WORKGROUP_SIZE / WORKGROUP_SIZE,
