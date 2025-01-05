@@ -8,6 +8,8 @@
 @group(2) @binding(0) var<storage, read> force: array<vec2<f32>>;
 @group(2) @binding(1) var<storage, read> position: array<vec2<f32>>;
 
+@group(3) @binding(0) var levelset: texture_storage_2d<r32float, read_write>;
+
 @compute
 @workgroup_size(1, 64, 1)
 fn add_force(
@@ -17,8 +19,14 @@ fn add_force(
     let x_v = vec2<i32>(x_u.y, x_u.x);
     var n = arrayLength(&force);
     var net_force = vec2<f32>(0.0, 0.0);
-    net_force.y = constants.gravity.y;
-    net_force.x = constants.gravity.x;
+    let levelset_u = textureLoad(levelset, x_u).r;
+    let levelset_v = textureLoad(levelset, x_v).r;
+    if (levelset_u < 0.0) {
+        net_force.x = constants.gravity.x;
+    }
+    if (levelset_v < 0.0) {
+        net_force.y = constants.gravity.y;
+    }
 
     loop {
         if (n == 0) {
