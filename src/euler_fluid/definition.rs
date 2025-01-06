@@ -16,18 +16,18 @@ use bevy::{
 /// * `rho`: The density of fluid in unit of [kg/m^3]. Currently, uniform density is supported only.
 /// * `initial_fluid_level`: Initialize fluid level with specified value. the value is valid between 0.0 - 1.0. 0.0 indicates empty and 1.0 indicates the simulation domain is filled with fluid.
 /// * `gravity`: Uniform force enforced uniformly to the simulation domain in unit of [m/s^2].
-/// 
+///
 /// # Examples
 /// ```rust
 /// use bevy::{
 ///     prelude::*,
 ///     sprite::MaterialMesh2dBundle,
 /// };
-/// use bevy_eulerian_fluid::euler_fluid::{
+/// use bevy_eulerian_fluid::{
 ///     fluid_material::VelocityMaterial,
 ///     definition::{FluidSettings, VelocityTextures},
 /// };
-/// 
+///
 /// // On Startup
 /// fn setup_scene(mut commands: Commands) {
 ///     commands.spawn(FluidSettings {

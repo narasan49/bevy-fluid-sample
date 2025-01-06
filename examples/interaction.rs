@@ -13,7 +13,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 
-use bevy_eulerian_fluid::euler_fluid::{
+use bevy_eulerian_fluid::{
     definition::{FluidSettings, LocalForces, VelocityTextures},
     fluid_material::VelocityMaterial,
     FluidPlugin,

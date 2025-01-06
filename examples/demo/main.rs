@@ -12,7 +12,7 @@ use bevy::{
     },
 };
 
-use bevy_eulerian_fluid::euler_fluid::{
+use bevy_eulerian_fluid::{
     definition::{FluidSettings, SimulationUniform, VelocityTextures},
     fluid_material::VelocityMaterial,
     geometry::{self},

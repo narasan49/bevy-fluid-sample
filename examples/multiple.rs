@@ -9,7 +9,7 @@ use bevy::{
     },
     sprite::MaterialMesh2dBundle,
 };
-use bevy_eulerian_fluid::euler_fluid::{
+use bevy_eulerian_fluid::{
     definition::{FluidSettings, VelocityTextures},
     fluid_material::VelocityMaterial,
     FluidPlugin,
