@@ -9,7 +9,6 @@ Try it on [here](https://narasan49.github.io/bevy-fluid-sample/)!
 - [ ] Viscosity
 - [ ] Fluid surface
   - [x] Basic implementation
-  - [ ] Mass conservation
   - [ ] Fluid source/drain
 - [ ] Solid body interaction
   - [x] One-way solid body to fluid interaction
@@ -65,3 +64,20 @@ The simulation is inspired by and based on the algorithms described in these boo
 - [GPU Gems Chapter 38](https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu) by Mark J. Harris
 
 I alse use [Kenny](https://kenney.nl/) assets for examples.
+
+## License
+
+Licensed under either of
+
+ * Apache License, Version 2.0
+   ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license
+   ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
