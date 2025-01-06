@@ -1,8 +1,60 @@
-# bevy fluid sample
+# bevy_eulerian_fluid
 
-This project is a fluid simulation sample built using the Bevy engine.
+This project is a fluid simulation plugin for [Bevy](https://bevyengine.org/).
+
+![img](./docs/bevy-fluid-surface.gif)
 
 Try it on [here](https://narasan49.github.io/bevy-fluid-sample/)!
+
+## Basic Usage
+1. Add `FluidPlugin` to the app.
+2. Spawn `FluidSettings`, then `FluidSimulationBundle` will be inserted automatically to the entity. By querying components bundled with `FluidSimulationBundle` such as `VelocityTextures`, the simulation results can be retreived. (See [examples](./examples/) for the detailed implementation!)
+
+```rust
+use bevy_eulerian_fluid::{
+    definition::{FluidSettings, LevelsetTextures, VelocityTextures},
+    FluidPlugin,
+};
+
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(FluidPlugin)
+        .add_systems(Startup, setup_scene)
+        .add_systems(Update, on_initialized)
+        .run();
+}
+
+fn setup_scene(mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
+
+    commands.spawn(FluidSettings {
+        dx: 1.0f32,
+        dt: 0.5f32,
+        rho: 997f32, // water
+        gravity: Vec2::Y,
+        size: SIZE,
+        initial_fluid_level: 0.9,
+    });
+}
+
+fn on_initialized(
+    mut commands: Commands,
+    query: Query<(Entity, &LevelsetTextures, &VelocityTextures), Added<LevelsetTextures>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<CustomMaterial>>,
+    mut velocity_materials: ResMut<Assets<VelocityMaterial>>,
+) {
+    for (entity, levelset_textures, velocity_textures) in &query {
+        // Implement your own code to visualize the results.
+    }
+}
+```
+
+### Interact to the fluid
+The simulation entity has `LocalForces` component, which holds arrays of forces (in m/s^2) and position (in pixels). forces can be applied to the simulation domain by setting `LocalForces`.
+
+See also an [interaction example](./examples/interaction.rs) for the detailed implementation.
 
 ## Features
 - [x] Incompressible 2D fluid simulation
@@ -14,48 +66,33 @@ Try it on [here](https://narasan49.github.io/bevy-fluid-sample/)!
   - [x] One-way solid body to fluid interaction
   - [ ] Two-way coupling with solid body and fluid
 
-## Getting Started
+## Examples
+There are some examples to demonstrate how to visualize and interact to the simulation results:  
+- **Imposing forces with mouse and touch input**
+  (Also available [here](https://narasan49.github.io/bevy-fluid-sample/))
+  ```ps1
+  cargo run --example interaction
+  ```
+  https://github.com/user-attachments/assets/bcb7839d-115b-4bc9-ba78-68c4d1cdc7a2
+  
+- **Solid-to-fluid feedback**
 
-To run the Bevy Fluid Sample, you will need to have Rust and Cargo installed on your system. Follow these steps to get up and running:
+  ```ps1
+  cargo run --example demo
+  ```
+  https://github.com/user-attachments/assets/af3e9aa5-b768-4375-ba44-a4876557524c
 
-1. Clone the repository:
-```ps1
-git clone git@github.com:narasan49/bevy-fluid-sample.git
-```
+- **Spawn multiple fluids**
+  ```ps1
+  cargo run --example multiple
+  ```
+  ![img](./docs/multiple_fluids.png)
 
-2. Navigate to the project directory:
-
-```ps1
-cd bevy-fluid-sample
-```
-
-3. Build and run the project:
-I have some examples to demonstrate my fluid simulation:
-    - **Imposing forces with mouse and touch input**
-      (Also available [here](https://narasan49.github.io/bevy-fluid-sample/))
-      ```ps1
-      cargo run --example interaction
-      ```
-      https://github.com/user-attachments/assets/bcb7839d-115b-4bc9-ba78-68c4d1cdc7a2
-      
-    - **Solid-to-fluid feedback**
-
-      ```ps1
-      cargo run --example demo
-      ```
-      https://github.com/user-attachments/assets/af3e9aa5-b768-4375-ba44-a4876557524c
-
-    - **Spawn multiple fluids**
-      ```ps1
-      cargo run --example multiple
-      ```
-      ![img](./docs/multiple_fluids.png)
-
-    - **Fluid surface**
-      ```ps1
-      cargo run --example water_surface
-      ```
-      ![img](./docs/bevy-fluid-surface.gif)
+- **Fluid surface**
+  ```ps1
+  cargo run --example water_surface
+  ```
+  ![img](./docs/bevy-fluid-surface.gif)
 
 ## Acknowledgments
 The simulation is inspired by and based on the algorithms described in these books:
