@@ -18,6 +18,13 @@ pub(crate) fn watch_fluid_component(
 ) {
     for (entity, settings) in &query {
         let size = settings.size;
+
+        if size.0 != size.1 {
+            warn!("the size is recommended to be same between size.0 and size.1. {size:?}");
+        }
+        if size.0 % 64 != 0 || size.1 % 64 != 0 {
+            warn!("the size is recommended to be multiple of 64. {size:?}");
+        }
         let size_u = (size.0 + 1, size.1);
         let size_v = (size.0, size.1 + 1);
 
