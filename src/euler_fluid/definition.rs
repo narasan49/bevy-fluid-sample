@@ -7,6 +7,65 @@ use bevy::{
     },
 };
 
+/// Setting for fluid simulation. By spawning fluid settings, components required to the simulation will be spawned and the simulation will start.
+/// Simulation result can be found on [`VelocityTextures`].
+/// # Arguments
+/// * `size`: The size of 2D simulation domain in pixels. The size is recommended to be same between each dimension and to be multiple of 64 pixels.
+/// * `dx`: The size of a pixel in unit of [m/pixel].
+/// * `dt`: The temporal resolution of the simulation in unit of [sec].
+/// * `rho`: The density of fluid in unit of [kg/m^3]. Currently, uniform density is supported only.
+/// * `initial_fluid_level`: Initialize fluid level with specified value. the value is valid between 0.0 - 1.0. 0.0 indicates empty and 1.0 indicates the simulation domain is filled with fluid.
+/// * `gravity`: Uniform force enforced uniformly to the simulation domain in unit of [m/s^2].
+/// 
+/// # Examples
+/// ```rust
+/// use bevy::{
+///     prelude::*,
+///     sprite::MaterialMesh2dBundle,
+/// };
+/// use bevy_fluid::euler_fluid::{
+///     fluid_material::VelocityMaterial,
+///     definition::{FluidSettings, VelocityTextures},
+/// };
+/// 
+/// // On Startup
+/// fn setup_scene(mut commands: Commands) {
+///     commands.spawn(FluidSettings {
+///         dx: 1.0f32,
+///         dt: 0.5f32,
+///         rho: 1.293f32,
+///         gravity: Vec2::ZERO,
+///         size: (512, 512),
+///         initial_fluid_level: 1.0f32,
+///     });
+/// }
+///
+/// // On Update
+/// fn on_advection_initialized(
+///     mut commands: Commands,
+///     query: Query<&VelocityTextures, Added<VelocityTextures>>,
+///     mut meshes: ResMut<Assets<Mesh>>,
+///     mut materials: ResMut<Assets<VelocityMaterial>>,
+/// ) {
+///     // Spawn a mesh to visualize fluid simulation.
+///     for velocity_texture in &query {
+///         let mesh = meshes.add(Rectangle::default());
+///         let material = materials.add(VelocityMaterial {
+///             offset: 0.5,
+///             scale: 0.1,
+///             u: Some(velocity_texture.u0.clone()),
+///             v: Some(velocity_texture.v0.clone()),
+///         });
+///         commands
+///             .spawn(MaterialMesh2dBundle {
+///                 mesh: mesh.into(),
+///                 transform: Transform::default().with_scale(Vec3::splat(512.0)),
+///                 material,
+///                 ..default()
+///             });
+///     }
+/// }
+/// ```
 #[derive(Component, Clone, ExtractComponent)]
 pub struct FluidSettings {
     pub dx: f32,
@@ -14,8 +73,6 @@ pub struct FluidSettings {
     pub rho: f32,
     pub gravity: Vec2,
     pub size: (u32, u32),
-    /// Initialize fluid level with specified value.
-    /// Valid range: 0.0 (empty) - 1.0 (filled with fluid).
     pub initial_fluid_level: f32,
 }
 
@@ -28,6 +85,13 @@ pub struct SimulationUniform {
     pub initial_fluid_level: f32,
 }
 
+/// Fluid velocity field.
+/// To retreive simulation result, please use u0 and v0.
+/// u1, v1 are intermediate velocities used for simulation.
+/// * u0: x-ward velocity with size of (size.0 + 1, size.1).
+/// * v0: y-ward velocity with size of (size.0, size.1 + 1).
+/// * u1: intermediate x-ward velocity with size of (size.0 + 1, size.1).
+/// * v1: intermediate y-ward velocity with size of (size.0, size.1 + 1).
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]
 pub struct VelocityTextures {
     #[storage_texture(0, image_format = R32Float, access = ReadWrite)]
