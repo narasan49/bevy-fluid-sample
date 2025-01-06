@@ -309,7 +309,6 @@ name = "bevy-fluid"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bytemuck",
  "example_utils",
  "iyes_perf_ui",
  "rand",
