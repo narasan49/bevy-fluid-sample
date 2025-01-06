@@ -1,4 +1,4 @@
-extern crate bevy_fluid;
+extern crate bevy_eulerian_fluid;
 
 use bevy::{
     asset::AssetMetaCheck,
@@ -13,7 +13,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 
-use bevy_fluid::euler_fluid::{
+use bevy_eulerian_fluid::euler_fluid::{
     definition::{FluidSettings, LocalForces, VelocityTextures},
     fluid_material::VelocityMaterial,
     FluidPlugin,

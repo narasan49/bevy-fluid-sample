@@ -1,4 +1,4 @@
-extern crate bevy_fluid;
+extern crate bevy_eulerian_fluid;
 
 use bevy::{
     asset::AssetMetaCheck,
@@ -11,7 +11,7 @@ use bevy::{
     sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle},
 };
 
-use bevy_fluid::euler_fluid::{
+use bevy_eulerian_fluid::euler_fluid::{
     definition::{FluidSettings, LevelsetTextures, VelocityTextures},
     fluid_material::VelocityMaterial,
     FluidPlugin,

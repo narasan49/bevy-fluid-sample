@@ -305,16 +305,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy-fluid"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "example_utils",
- "iyes_perf_ui",
- "rand",
-]
-
-[[package]]
 name = "bevy_a11y"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -559,6 +549,16 @@ checksum = "f0452d8254c8bfae4bff6caca2a8be3b0c1b2e1a72b93e9b9f6a21c8dff807e0"
 dependencies = [
  "bevy_macro_utils",
  "encase_derive_impl",
+]
+
+[[package]]
+name = "bevy_eulerian_fluid"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "example_utils",
+ "iyes_perf_ui",
+ "rand",
 ]
 
 [[package]]
@@ -1722,7 +1722,7 @@ name = "example_utils"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy-fluid",
+ "bevy_eulerian_fluid",
 ]
 
 [[package]]

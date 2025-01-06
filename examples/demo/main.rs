@@ -1,4 +1,4 @@
-extern crate bevy_fluid;
+extern crate bevy_eulerian_fluid;
 mod ui;
 
 use bevy::{
@@ -12,7 +12,7 @@ use bevy::{
     },
 };
 
-use bevy_fluid::euler_fluid::{
+use bevy_eulerian_fluid::euler_fluid::{
     definition::{FluidSettings, SimulationUniform, VelocityTextures},
     fluid_material::VelocityMaterial,
     geometry::{self},

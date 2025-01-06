@@ -23,7 +23,7 @@ use bevy::{
 ///     prelude::*,
 ///     sprite::MaterialMesh2dBundle,
 /// };
-/// use bevy_fluid::euler_fluid::{
+/// use bevy_eulerian_fluid::euler_fluid::{
 ///     fluid_material::VelocityMaterial,
 ///     definition::{FluidSettings, VelocityTextures},
 /// };
