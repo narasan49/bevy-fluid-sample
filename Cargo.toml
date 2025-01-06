@@ -2,7 +2,11 @@
 name = "bevy-fluid"
 version = "0.1.0"
 edition = "2021"
+description = "An eularian fluid simulation plugin for Bevy."
+categories = ["game-development", "science", "simulation"]
+keywords = ["bevy", "fluid", "simulation", "physics", "graphics"]
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/narasan49/bevy-fluid-sample"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [workspace]
