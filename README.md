@@ -4,7 +4,7 @@ This project is a fluid simulation plugin for [Bevy](https://bevyengine.org/).
 
 ![img](./docs/bevy-fluid-surface.gif)
 
-Try it on [here](https://narasan49.github.io/bevy-fluid-sample/)!
+Try it on [here](https://narasan49.github.io/bevy_eulerian_fluid/)!
 
 ## Basic Usage
 1. Add `FluidPlugin` to the app.
@@ -69,7 +69,7 @@ See also an [interaction example](./examples/interaction.rs) for the detailed im
 ## Examples
 There are some examples to demonstrate how to visualize and interact to the simulation results:  
 - **Imposing forces with mouse and touch input**
-  (Also available [here](https://narasan49.github.io/bevy-fluid-sample/))
+  (Also available [here](https://narasan49.github.io/bevy_eulerian_fluid/))
   ```ps1
   cargo run --example interaction
   ```

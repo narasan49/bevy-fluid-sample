@@ -20,7 +20,7 @@ jobs:
         - name: build
           run: |
             cargo build --release --target wasm32-unknown-unknown --example interaction
-            wasm-bindgen --target web --out-dir ./out/ --out-name bevy-fluid-sample ./target/wasm32-unknown-unknown/release/examples/interaction.wasm
+            wasm-bindgen --target web --out-dir ./out/ --out-name interaction ./target/wasm32-unknown-unknown/release/examples/interaction.wasm
         - uses: peaceiris/actions-gh-pages@v4
           with:
             github_token: ${{ secrets.GITHUB_TOKEN }}
