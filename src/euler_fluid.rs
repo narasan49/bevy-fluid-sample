@@ -84,16 +84,100 @@ impl Plugin for FluidPlugin {
         load_internal_asset!(
             app,
             FLUID_UNIFORM_SHADER_HANDLE,
-            "../assets/shaders/fluid_uniform.wgsl",
+            "euler_fluid/shaders/fluid_uniform.wgsl",
             Shader::from_wgsl
         );
 
         load_internal_asset!(
             app,
             COORDINATE_SHADER_HANDLE,
-            "../assets/shaders/coordinate.wgsl",
+            "euler_fluid/shaders/coordinate.wgsl",
             Shader::from_wgsl
-        )
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::INITIALIZE_GRID_CENTER_SHADER_HANDLE,
+            "euler_fluid/shaders/initialize_grid_center.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::INITIALIZE_VELOCITY_SHADER_HANDLE,
+            "euler_fluid/shaders/initialize_velocity.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::UPDATE_GRID_LABEL_SHADER_HANDLE,
+            "euler_fluid/shaders/update_grid_label.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::ADVECTION_SHADER_HANDLE,
+            "euler_fluid/shaders/advection.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::ADD_FORCE_SHADER_HANDLE,
+            "euler_fluid/shaders/add_force.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::DIVERGENCE_SHADER_HANDLE,
+            "euler_fluid/shaders/divergence.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::JACOBI_ITERATION_SHADER_HANDLE,
+            "euler_fluid/shaders/jacobi_iteration.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::SOLVE_VELOCITY_SHADER_HANDLE,
+            "euler_fluid/shaders/solve_velocity.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::RECOMPUTE_LEVELSET_INITIALIZE_SHADER_HANDLE,
+            "euler_fluid/shaders/recompute_levelset/initialize.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::RECOMPUTE_LEVELSET_ITERATE_SHADER_HANDLE,
+            "euler_fluid/shaders/recompute_levelset/iterate.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::RECOMPUTE_LEVELSET_SDF_SHADER_HANDLE,
+            "euler_fluid/shaders/recompute_levelset/calculate_sdf.wgsl",
+            Shader::from_wgsl
+        );
+
+        load_internal_asset!(
+            app,
+            fluid_bind_group::ADVECT_LEVELSET_SHADER_HANDLE,
+            "euler_fluid/shaders/advect_levelset.wgsl",
+            Shader::from_wgsl
+        );
     }
 
     fn finish(&self, app: &mut App) {
