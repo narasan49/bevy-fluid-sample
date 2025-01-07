@@ -162,4 +162,4 @@ fn fragment(
 fragment shader
 
 以下のような描画結果が得られます。  
-![img](sharing_texture.md)
+![img](cs_to_fs_result.png)
