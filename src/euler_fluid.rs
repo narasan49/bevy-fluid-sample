@@ -1,12 +1,12 @@
 pub mod definition;
 pub mod fluid_bind_group;
-pub mod fluid_material;
 pub mod geometry;
 pub mod render_node;
 pub mod setup_components;
 
 use crate::euler_fluid::definition::{FluidSettings, LevelsetTextures};
 use crate::euler_fluid::fluid_bind_group::FluidBindGroups;
+use crate::material::FluidMaterialPlugin;
 use bevy::{
     asset::load_internal_asset,
     math::vec2,
@@ -18,14 +18,12 @@ use bevy::{
         render_graph::RenderGraph,
         Render, RenderApp, RenderSet,
     },
-    sprite::Material2dPlugin,
 };
 use definition::{
     CircleObstacle, DivergenceTextures, JumpFloodingSeedsTextures, LocalForces, Obstacles,
     PressureTextures, SimulationUniform, VelocityTextures,
 };
 use fluid_bind_group::FluidPipelines;
-use fluid_material::VelocityMaterial;
 use geometry::Velocity;
 
 use render_node::{EulerFluidNode, FluidLabel};
@@ -53,8 +51,7 @@ impl Plugin for FluidPlugin {
             .add_plugins(ExtractComponentPlugin::<LocalForces>::default())
             .add_plugins(ExtractComponentPlugin::<SimulationUniform>::default())
             .add_plugins(UniformComponentPlugin::<SimulationUniform>::default())
-            .add_plugins(MaterialPlugin::<VelocityMaterial>::default())
-            .add_plugins(Material2dPlugin::<VelocityMaterial>::default())
+            .add_plugins(FluidMaterialPlugin)
             .add_systems(Update, update_geometry)
             .add_systems(Update, watch_fluid_component);
 

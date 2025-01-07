@@ -14,8 +14,8 @@ use bevy::{
 
 use bevy_eulerian_fluid::{
     definition::{FluidSettings, SimulationUniform, VelocityTextures},
-    fluid_material::VelocityMaterial,
     geometry::{self},
+    material::VelocityMaterial,
     FluidPlugin,
 };
 
@@ -119,8 +119,8 @@ fn on_fluid_setup(
         let material = materials.add(VelocityMaterial {
             offset: 0.5,
             scale: 0.1,
-            u: Some(velocity_texture.u0.clone()),
-            v: Some(velocity_texture.v0.clone()),
+            u: velocity_texture.u0.clone(),
+            v: velocity_texture.v0.clone(),
         });
         commands.spawn((
             Name::new("advection"),
