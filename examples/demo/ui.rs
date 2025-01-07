@@ -1,4 +1,4 @@
-use bevy::{prelude::*, window::WindowMode};
+use bevy::prelude::*;
 
 pub struct GameUiPlugin;
 
@@ -7,9 +7,6 @@ pub struct ResetButton;
 
 #[derive(Component)]
 pub struct AddButton;
-
-#[derive(Component)]
-pub struct ToggleFullscreen;
 
 const BUTTON_COLOR: Color = Color::LinearRgba(LinearRgba::WHITE);
 const HOVERED_COLOR: Color = Color::LinearRgba(LinearRgba {
@@ -28,8 +25,8 @@ const PRESSED_COLOR: Color = Color::LinearRgba(LinearRgba {
 fn basic_button() -> ButtonBundle {
     ButtonBundle {
         style: Style {
-            width: Val::Px(150.0),
-            height: Val::Px(50.0),
+            width: Val::Px(100.0),
+            height: Val::Px(30.0),
             border: UiRect::all(Val::Px(2.0)),
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center,
@@ -44,11 +41,11 @@ fn basic_button() -> ButtonBundle {
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup)
-            .add_systems(Update, (button_update, toggle_fullscreen));
+            .add_systems(Update, button_update);
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands) {
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -66,9 +63,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     parent.spawn(TextBundle::from_section(
                         "Reset",
                         TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 40.0,
+                            font_size: 30.0,
                             color: Color::BLACK,
+                            ..default()
                         },
                     ));
                 })
@@ -79,32 +76,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     parent.spawn(TextBundle::from_section(
                         "Add",
                         TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                            font_size: 40.0,
+                            font_size: 30.0,
                             color: Color::BLACK,
+                            ..default()
                         },
                     ));
                 })
                 .insert(AddButton);
-
-            let fullscreen_icon =
-                asset_server.load("kenney_onscreen-controls/Sprites/flat-dark/flatDark29.png");
-            parent
-                .spawn(ButtonBundle {
-                    style: Style {
-                        width: Val::Px(50.0),
-                        height: Val::Px(50.0),
-                        border: UiRect::all(Val::Px(2.0)),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                    border_color: BorderColor(Color::BLACK),
-                    background_color: BUTTON_COLOR.into(),
-                    image: UiImage::new(fullscreen_icon),
-                    ..default()
-                })
-                .insert(ToggleFullscreen);
         });
 }
 
@@ -125,27 +103,6 @@ fn button_update(
             Interaction::None => {
                 *color = BUTTON_COLOR.into();
             }
-        }
-    }
-}
-
-fn toggle_fullscreen(
-    mut window_query: Query<&mut Window>,
-    interaction_query: Query<
-        &Interaction,
-        (Changed<Interaction>, With<Button>, With<ToggleFullscreen>),
-    >,
-) {
-    for interaction in interaction_query.iter() {
-        let Ok(mut window) = window_query.get_single_mut() else {
-            return;
-        };
-
-        if *interaction == Interaction::Pressed {
-            window.mode = match window.mode {
-                WindowMode::BorderlessFullscreen => WindowMode::Windowed,
-                _ => WindowMode::BorderlessFullscreen,
-            };
         }
     }
 }

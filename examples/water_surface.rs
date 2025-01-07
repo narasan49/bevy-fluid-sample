@@ -1,4 +1,4 @@
-extern crate bevy_fluid;
+extern crate bevy_eulerian_fluid;
 
 use bevy::{
     asset::AssetMetaCheck,
@@ -11,16 +11,16 @@ use bevy::{
     sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle},
 };
 
-use bevy_fluid::euler_fluid::{
+use bevy_eulerian_fluid::{
     definition::{FluidSettings, LevelsetTextures, VelocityTextures},
-    fluid_material::VelocityMaterial,
+    material::VelocityMaterial,
     FluidPlugin,
 };
 use example_utils::{fps_counter::FpsCounterPlugin, mouse_motion};
 
-const WIDTH: f32 = 1280.0;
-const HEIGHT: f32 = 720.0;
-const SIZE: (u32, u32) = (512, 512);
+const WIDTH: f32 = 640.0;
+const HEIGHT: f32 = 360.0;
+const SIZE: (u32, u32) = (256, 256);
 
 fn main() {
     let mut app = App::new();
@@ -108,8 +108,8 @@ fn on_advection_initialized(
         let material_velocity = velocity_materials.add(VelocityMaterial {
             offset: 0.5,
             scale: 0.1,
-            u: Some(velocity_textures.u0.clone()),
-            v: Some(velocity_textures.v0.clone()),
+            u: velocity_textures.u0.clone(),
+            v: velocity_textures.v0.clone(),
         });
 
         commands.spawn(MaterialMesh2dBundle {

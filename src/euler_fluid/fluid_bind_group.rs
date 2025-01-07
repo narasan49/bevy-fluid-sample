@@ -24,6 +24,33 @@ use super::definition::{
     SimulationUniform, VelocityTextures,
 };
 
+pub(super) const INITIALIZE_GRID_CENTER_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0xD9C0123A6DC94D01AA0D8BEF9784EC16);
+pub(super) const INITIALIZE_VELOCITY_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0xE517B3F694A9446B970368B971BF631E);
+
+pub(super) const UPDATE_GRID_LABEL_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x3B7E226FADA549C1A6662BCED3B83535);
+pub(super) const ADVECTION_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x4C394851214E47D3879CA7E1837A2D07);
+pub(super) const ADD_FORCE_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x446049599EE84040B9FFE7C00783F856);
+pub(super) const DIVERGENCE_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0xD31C2EF5DE254DC097F20C813A5A0C6D);
+pub(super) const JACOBI_ITERATION_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x8BB3FAA20BC24FB4B790C11A8A2F8E63);
+pub(super) const SOLVE_VELOCITY_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x1B95362358B242BCA68804444013F99E);
+
+pub(super) const RECOMPUTE_LEVELSET_INITIALIZE_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0xAFC6EC29854A413CB0E4113506AE2254);
+pub(super) const RECOMPUTE_LEVELSET_ITERATE_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x5BD03953327243328E2D0F3373934E39);
+pub(super) const RECOMPUTE_LEVELSET_SDF_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x45710E52048449A5A59D382284974B38);
+pub(super) const ADVECT_LEVELSET_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(0x4165F4894F76420E8D67FC83E3466ACA);
+
 #[derive(Resource)]
 pub(crate) struct FluidPipelines {
     pub initialize_velocity_pipeline: CachedComputePipelineId,
@@ -54,7 +81,6 @@ impl FromWorld for FluidPipelines {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.resource::<RenderDevice>();
         let pipeline_cache = world.resource::<PipelineCache>();
-        let asset_server = world.resource::<AssetServer>();
 
         let uniform_bind_group_layout = render_device.create_bind_group_layout(
             Some("Create uniform bind group layout"),
@@ -79,19 +105,16 @@ impl FromWorld for FluidPipelines {
             ),
         );
 
-        let initialize_velocity_shader = asset_server.load("shaders/initialize_velocity.wgsl");
         let initialize_velocity_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue InitializeVelocityPipeline")),
                 layout: vec![velocity_bind_group_layout.clone()],
                 push_constant_ranges: vec![],
-                shader: initialize_velocity_shader,
+                shader: INITIALIZE_VELOCITY_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("initialize_velocity"),
             });
 
-        let initialize_grid_center_shader =
-            asset_server.load("shaders/initialize_grid_center.wgsl");
         let initialize_grid_center_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue InitializeGridCenterPipeline")),
@@ -100,12 +123,11 @@ impl FromWorld for FluidPipelines {
                     uniform_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: initialize_grid_center_shader,
+                shader: INITIALIZE_GRID_CENTER_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("initialize_grid_center"),
             });
 
-        let update_grid_label_shader = asset_server.load("shaders/update_grid_label.wgsl");
         let update_grid_label_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue UpdateGridLabelPipeline")),
@@ -115,12 +137,11 @@ impl FromWorld for FluidPipelines {
                     obstacles_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: update_grid_label_shader,
+                shader: UPDATE_GRID_LABEL_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("update_grid_label"),
             });
 
-        let advection_shader = asset_server.load("shaders/advection.wgsl");
         let advection_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: Some(Cow::from("Queue AdvectionPipeline")),
             layout: vec![
@@ -129,12 +150,11 @@ impl FromWorld for FluidPipelines {
                 uniform_bind_group_layout.clone(),
             ],
             push_constant_ranges: vec![],
-            shader: advection_shader,
+            shader: ADVECTION_SHADER_HANDLE,
             shader_defs: vec![],
             entry_point: Cow::from("advection"),
         });
 
-        let add_force_shader = asset_server.load("shaders/add_force.wgsl");
         let add_force_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             label: Some(Cow::from("Queue AddForcePipeline")),
             layout: vec![
@@ -144,12 +164,11 @@ impl FromWorld for FluidPipelines {
                 levelset_bind_group_layout.clone(),
             ],
             push_constant_ranges: vec![],
-            shader: add_force_shader,
+            shader: ADD_FORCE_SHADER_HANDLE,
             shader_defs: vec![],
             entry_point: Cow::from("add_force"),
         });
 
-        let divergence_shader = asset_server.load("shaders/divergence.wgsl");
         let divergence_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue DivergencePipeline")),
@@ -159,12 +178,11 @@ impl FromWorld for FluidPipelines {
                     levelset_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: divergence_shader,
+                shader: DIVERGENCE_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("divergence"),
             });
 
-        let jacobi_iteration_shader = asset_server.load("shaders/jacobi_iteration.wgsl");
         let jacobi_iteration_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue JacobiIterationPipeline")),
@@ -175,7 +193,7 @@ impl FromWorld for FluidPipelines {
                     levelset_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: jacobi_iteration_shader.clone(),
+                shader: JACOBI_ITERATION_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("jacobi_iteration"),
             });
@@ -190,12 +208,11 @@ impl FromWorld for FluidPipelines {
                     levelset_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: jacobi_iteration_shader,
+                shader: JACOBI_ITERATION_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("jacobi_iteration_reverse"),
             });
 
-        let solve_velocity_shader = asset_server.load("shaders/solve_velocity.wgsl");
         let solve_velocity_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue SolveVelocityPipeline")),
@@ -206,13 +223,11 @@ impl FromWorld for FluidPipelines {
                     levelset_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: solve_velocity_shader,
+                shader: SOLVE_VELOCITY_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("solve_velocity"),
             });
 
-        let recompute_levelset_initialization_shader =
-            asset_server.load("shaders/recompute_levelset/initialize.wgsl");
         let recompute_levelset_initialization_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue RecomputeLevelsetInitializationPipeline")),
@@ -221,13 +236,11 @@ impl FromWorld for FluidPipelines {
                     jump_flooding_seeds_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: recompute_levelset_initialization_shader,
+                shader: RECOMPUTE_LEVELSET_INITIALIZE_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("initialize"),
             });
 
-        let recompute_levelset_iteration_shader =
-            asset_server.load("shaders/recompute_levelset/iterate.wgsl");
         let recompute_levelset_iteration_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue RecomputeLevelsetIteratePipeline")),
@@ -236,13 +249,11 @@ impl FromWorld for FluidPipelines {
                     jump_flooding_uniform_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: recompute_levelset_iteration_shader,
+                shader: RECOMPUTE_LEVELSET_ITERATE_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("iterate"),
             });
 
-        let recompute_levelset_solve_shader =
-            asset_server.load("shaders/recompute_levelset/calculate_sdf.wgsl");
         let recompute_levelset_solve_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue RecomputeLevelsetSolvePipeline")),
@@ -251,12 +262,11 @@ impl FromWorld for FluidPipelines {
                     jump_flooding_seeds_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: recompute_levelset_solve_shader,
+                shader: RECOMPUTE_LEVELSET_SDF_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("calculate_sdf"),
             });
 
-        let advect_levelset_shader = asset_server.load("shaders/advect_levelset.wgsl");
         let advect_levelset_pipeline =
             pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
                 label: Some(Cow::from("Queue AdvectLevelsetPipeline")),
@@ -266,7 +276,7 @@ impl FromWorld for FluidPipelines {
                     uniform_bind_group_layout.clone(),
                 ],
                 push_constant_ranges: vec![],
-                shader: advect_levelset_shader,
+                shader: ADVECT_LEVELSET_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("advect_levelset"),
             });

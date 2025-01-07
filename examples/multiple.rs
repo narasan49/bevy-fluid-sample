@@ -1,4 +1,4 @@
-extern crate bevy_fluid;
+extern crate bevy_eulerian_fluid;
 
 use bevy::{
     asset::AssetMetaCheck,
@@ -9,15 +9,15 @@ use bevy::{
     },
     sprite::MaterialMesh2dBundle,
 };
-use bevy_fluid::euler_fluid::{
+use bevy_eulerian_fluid::{
     definition::{FluidSettings, VelocityTextures},
-    fluid_material::VelocityMaterial,
+    material::VelocityMaterial,
     FluidPlugin,
 };
 use example_utils::{fps_counter::FpsCounterPlugin, mouse_motion};
 
-const WIDTH: f32 = 1280.0;
-const HEIGHT: f32 = 720.0;
+const WIDTH: f32 = 640.0;
+const HEIGHT: f32 = 360.0;
 
 fn main() {
     // [workaround] Asset meta files cannot be found on browser.
@@ -69,8 +69,8 @@ fn setup_scene(mut commands: Commands) {
     for i in 0..4 {
         for j in 0..2 {
             let translation = Vec3::new(
-                (i * size) as f32 * 1.1 - (2 * size) as f32,
-                (j * size) as f32 * 1.1 - (1 * size) as f32,
+                (i * size) as f32 * 1.1 - size as f32 * 1.6,
+                (j * size) as f32 * 1.1 - size as f32 * 0.8,
                 0.0,
             );
             commands
@@ -103,8 +103,8 @@ fn on_fluid_setup(
         let material = materials.add(VelocityMaterial {
             offset: 0.5,
             scale: 0.1,
-            u: Some(velocity_texture.u0.clone()),
-            v: Some(velocity_texture.v0.clone()),
+            u: velocity_texture.u0.clone(),
+            v: velocity_texture.v0.clone(),
         });
 
         commands.spawn(MaterialMesh2dBundle {

@@ -1,7 +1,12 @@
 [package]
-name = "bevy-fluid"
+name = "bevy_eulerian_fluid"
 version = "0.1.0"
 edition = "2021"
+description = "An eularian fluid simulation plugin for Bevy."
+categories = ["game-development", "science", "simulation"]
+keywords = ["bevy", "fluid", "simulation", "physics", "graphics"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/narasan49/bevy_eulerian_fluid"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [workspace]
@@ -10,10 +15,10 @@ members = [
 ]
 
 [dependencies]
-bevy = {version = "0.14.0", features = ["webgpu"]}
-bytemuck = "1.15.0"
+bevy = {version = "0.14.0"}
 
 [dev-dependencies]
+bevy = {version = "0.14.0", features = ["webgpu"]}
 iyes_perf_ui = "0.3.0"
 rand = "0.8.5"
 example_utils = { path = "crates/example_utils" }
