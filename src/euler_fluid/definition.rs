@@ -24,7 +24,7 @@ use bevy::{
 ///     sprite::MaterialMesh2dBundle,
 /// };
 /// use bevy_eulerian_fluid::{
-///     fluid_material::VelocityMaterial,
+///     material::VelocityMaterial,
 ///     definition::{FluidSettings, VelocityTextures},
 /// };
 ///
@@ -53,8 +53,8 @@ use bevy::{
 ///         let material = materials.add(VelocityMaterial {
 ///             offset: 0.5,
 ///             scale: 0.1,
-///             u: Some(velocity_texture.u0.clone()),
-///             v: Some(velocity_texture.v0.clone()),
+///             u: velocity_texture.u0.clone(),
+///             v: velocity_texture.v0.clone(),
 ///         });
 ///         commands
 ///             .spawn(MaterialMesh2dBundle {
