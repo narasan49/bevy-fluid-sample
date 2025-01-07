@@ -19,13 +19,13 @@ use bevy_eulerian_fluid::{
     FluidPlugin,
 };
 
+use example_utils::fps_counter::FpsCounterPlugin;
 use ui::{AddButton, GameUiPlugin, ResetButton};
 
-use iyes_perf_ui::{entries::PerfUiCompleteBundle, PerfUiPlugin};
 use rand::Rng;
 
-const WIDTH: f32 = 1280.0;
-const HEIGHT: f32 = 720.0;
+const WIDTH: f32 = 640.0;
+const HEIGHT: f32 = 360.0;
 
 fn main() {
     let mut app = App::new();
@@ -60,17 +60,11 @@ fn main() {
             }),
     )
     .add_plugins(FluidPlugin)
+    .add_plugins(FpsCounterPlugin)
     .add_plugins(GameUiPlugin)
     .add_systems(Startup, setup_scene)
     .add_systems(Update, (on_fluid_setup, update, update_geometry))
     .add_systems(Update, (button_update, add_object));
-
-    if cfg!(target_os = "windows") {
-        app.add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
-            .add_plugins(bevy::diagnostic::EntityCountDiagnosticsPlugin)
-            .add_plugins(bevy::diagnostic::SystemInformationDiagnosticsPlugin)
-            .add_plugins(PerfUiPlugin);
-    }
 
     app.run();
 }
@@ -109,10 +103,6 @@ fn setup_scene(mut commands: Commands) {
         size: (512, 512),
         initial_fluid_level: 1.0f32,
     });
-
-    if cfg!(target_os = "windows") {
-        commands.spawn(PerfUiCompleteBundle::default());
-    }
 }
 
 fn on_fluid_setup(
@@ -125,7 +115,7 @@ fn on_fluid_setup(
         info!("prepare velocity texture");
         // spwan plane to visualize advection
         let mesh =
-            meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(-1.0, 0.0, 0.0)));
+            meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(0.0, 1.0, 1.0)));
         let material = materials.add(VelocityMaterial {
             offset: 0.5,
             scale: 0.1,

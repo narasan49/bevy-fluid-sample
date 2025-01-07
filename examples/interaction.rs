@@ -18,9 +18,10 @@ use bevy_eulerian_fluid::{
     fluid_material::VelocityMaterial,
     FluidPlugin,
 };
+use example_utils::fps_counter::FpsCounterPlugin;
 
-const WIDTH: f32 = 1280.0;
-const HEIGHT: f32 = 720.0;
+const WIDTH: f32 = 640.0;
+const HEIGHT: f32 = 360.0;
 
 #[derive(Component)]
 struct MeshMarker;
@@ -59,6 +60,7 @@ fn main() {
             }),
     )
     .add_plugins(FluidPlugin)
+    .add_plugins(FpsCounterPlugin)
     .add_systems(Startup, setup_scene)
     .add_systems(Update, on_advection_initialized)
     .add_systems(Update, mouse_motion);
@@ -76,7 +78,7 @@ fn setup_scene(mut commands: Commands) {
         dt: 0.5f32,
         rho: 1.293f32, // air
         gravity: Vec2::ZERO,
-        size: (512, 512),
+        size: (256, 256),
         initial_fluid_level: 1.0f32,
     });
 }
@@ -101,7 +103,7 @@ fn on_advection_initialized(
         commands
             .spawn(MaterialMesh2dBundle {
                 mesh: mesh.into(),
-                transform: Transform::default().with_scale(Vec3::splat(512.0)),
+                transform: Transform::default().with_scale(Vec3::splat(256.0)),
                 material,
                 ..default()
             })
@@ -130,7 +132,7 @@ fn mouse_motion(
                     cursor_position,
                     window,
                     q_camera.single(),
-                    Vec2::splat(512.),
+                    Vec2::splat(256.),
                 );
                 let position = vec![position; force.len()];
                 local_forces.force = force.clone();
@@ -152,7 +154,7 @@ fn mouse_motion(
                     touch.position(),
                     q_window.single(),
                     q_camera.single(),
-                    Vec2::splat(512.),
+                    Vec2::splat(256.),
                 )
             })
             .collect::<Vec<_>>();

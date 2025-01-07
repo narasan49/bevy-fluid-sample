@@ -11,16 +11,16 @@ use bevy::{
     sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle},
 };
 
-use bevy_eulerian_fluid::euler_fluid::{
+use bevy_eulerian_fluid::{
     definition::{FluidSettings, LevelsetTextures, VelocityTextures},
     fluid_material::VelocityMaterial,
     FluidPlugin,
 };
 use example_utils::{fps_counter::FpsCounterPlugin, mouse_motion};
 
-const WIDTH: f32 = 1280.0;
-const HEIGHT: f32 = 720.0;
-const SIZE: (u32, u32) = (512, 512);
+const WIDTH: f32 = 640.0;
+const HEIGHT: f32 = 360.0;
+const SIZE: (u32, u32) = (256, 256);
 
 fn main() {
     let mut app = App::new();

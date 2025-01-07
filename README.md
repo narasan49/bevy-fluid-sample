@@ -73,20 +73,20 @@ There are some examples to demonstrate how to visualize and interact to the simu
   ```ps1
   cargo run --example interaction
   ```
-  https://github.com/user-attachments/assets/bcb7839d-115b-4bc9-ba78-68c4d1cdc7a2
-  
+  ![img](./docs/bevy-fluid-interaction.gif)
+
 - **Solid-to-fluid feedback**
 
   ```ps1
   cargo run --example demo
   ```
-  https://github.com/user-attachments/assets/af3e9aa5-b768-4375-ba44-a4876557524c
+  ![img](./docs/bevy-fluid-solid-to-fluid.gif)
 
 - **Spawn multiple fluids**
   ```ps1
   cargo run --example multiple
   ```
-  ![img](./docs/multiple_fluids.png)
+  ![img](./docs/bevy-fluid-multiple-fluids.gif)
 
 - **Fluid surface**
   ```ps1
