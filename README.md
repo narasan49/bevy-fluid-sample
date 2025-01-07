@@ -100,8 +100,6 @@ The simulation is inspired by and based on the algorithms described in these boo
 - [Fluid Simulation for Computer Graphics](https://www.amazon.co.jp/dp/1482232839) by Robert Bridson
 - [GPU Gems Chapter 38](https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu) by Mark J. Harris
 
-I alse use [Kenny](https://kenney.nl/) assets for examples.
-
 ## License
 
 Licensed under either of
