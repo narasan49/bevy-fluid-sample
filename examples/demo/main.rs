@@ -69,30 +69,21 @@ fn main() {
     app.run();
 }
 
-#[derive(Component)]
-struct CameraMarker;
-
 fn setup_scene(mut commands: Commands) {
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0.0, 2.0, 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+
     commands
         .spawn((
-            Camera3dBundle {
-                transform: Transform::from_xyz(0.0, 2.0, 2.0).looking_at(Vec3::ZERO, Vec3::Y),
-                ..default()
-            },
-            CameraMarker,
-        ))
-        .insert(Name::new("Camera"));
-
-    commands
-        .spawn(PointLightBundle {
-            point_light: PointLight {
+            PointLight {
                 intensity: 1500.0,
                 shadows_enabled: true,
                 ..default()
             },
-            transform: Transform::from_xyz(4.0, 8.0, 4.0),
-            ..default()
-        })
+            Transform::from_xyz(4.0, 8.0, 4.0),
+        ))
         .insert(Name::new("Light"));
 
     commands.spawn(FluidSettings {
@@ -112,8 +103,6 @@ fn on_fluid_setup(
     mut materials: ResMut<Assets<VelocityMaterial>>,
 ) {
     for velocity_texture in &query {
-        info!("prepare velocity texture");
-        // spwan plane to visualize advection
         let mesh =
             meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(0.0, 1.0, 1.0)));
         let material = materials.add(VelocityMaterial {
@@ -122,14 +111,7 @@ fn on_fluid_setup(
             u: velocity_texture.u0.clone(),
             v: velocity_texture.v0.clone(),
         });
-        commands.spawn((
-            Name::new("advection"),
-            MaterialMeshBundle {
-                mesh,
-                material,
-                ..default()
-            },
-        ));
+        commands.spawn((Mesh3d(mesh), MeshMaterial3d(material)));
     }
 }
 

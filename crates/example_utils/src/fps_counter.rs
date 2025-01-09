@@ -25,16 +25,12 @@ fn setup_fps_text(mut commands: Commands) {
     let root = commands
         .spawn((
             FpsRoot,
-            NodeBundle {
-                background_color: BackgroundColor(Color::BLACK.with_alpha(0.5)),
-                style: Style {
-                    position_type: PositionType::Absolute,
-                    right: Val::Percent(1.0),
-                    top: Val::Percent(1.0),
-                    bottom: Val::Auto,
-                    left: Val::Auto,
-                    ..default()
-                },
+            Node {
+                position_type: PositionType::Absolute,
+                right: Val::Percent(1.0),
+                top: Val::Percent(1.0),
+                bottom: Val::Auto,
+                left: Val::Auto,
                 ..default()
             },
         ))
@@ -42,42 +38,38 @@ fn setup_fps_text(mut commands: Commands) {
 
     let text = commands
         .spawn((
-            FpsText,
-            TextBundle {
-                text: Text::from_sections([
-                    TextSection {
-                        value: "FPS: ".into(),
-                        style: TextStyle {
-                            font_size: 16.0,
-                            color: Color::WHITE,
-                            ..default()
-                        },
-                    },
-                    TextSection {
-                        value: "N/A".into(),
-                        style: TextStyle {
-                            font_size: 16.0,
-                            color: Color::WHITE,
-                            ..default()
-                        },
-                    },
-                ]),
+            Text::new("FPS: "),
+            TextFont {
+                font_size: 16.0,
                 ..default()
             },
+            TextColor::WHITE,
+        ))
+        .with_child((
+            TextSpan::default(),
+            TextFont {
+                font_size: 16.0,
+                ..default()
+            },
+            TextColor::WHITE,
+            FpsText,
         ))
         .id();
-    commands.entity(root).push_children(&[text]);
+    commands.entity(root).add_child(text);
 }
 
-fn update_fps_text(diagnostics: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<FpsText>>) {
+fn update_fps_text(
+    diagnostics: Res<DiagnosticsStore>,
+    mut query: Query<&mut TextSpan, With<FpsText>>,
+) {
     for mut text in &mut query {
         if let Some(fps) = diagnostics
             .get(&FrameTimeDiagnosticsPlugin::FPS)
             .and_then(|fps| fps.smoothed())
         {
-            text.sections[1].value = format!("{fps:>4.0}");
+            **text = format!("{fps:>4.0}");
         } else {
-            text.sections[1].value = "N/A".into();
+            **text = "N/A".into();
         }
     }
 }

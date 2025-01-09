@@ -1,9 +1,9 @@
 use bevy::{
+    image::TextureFormatPixelInfo,
     prelude::*,
     render::{
         render_asset::RenderAssetUsages,
         render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
-        texture::{Image, TextureFormatPixelInfo},
     },
 };
 

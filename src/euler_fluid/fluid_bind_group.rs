@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use bevy::render::extract_component::ExtractComponent;
 use bevy::render::render_resource::UniformBuffer;
 use bevy::render::renderer::RenderQueue;
+use bevy::render::storage::GpuShaderStorageBuffer;
 use bevy::{
     prelude::*,
     render::{
@@ -113,6 +114,7 @@ impl FromWorld for FluidPipelines {
                 shader: INITIALIZE_VELOCITY_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("initialize_velocity"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let initialize_grid_center_pipeline =
@@ -126,6 +128,7 @@ impl FromWorld for FluidPipelines {
                 shader: INITIALIZE_GRID_CENTER_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("initialize_grid_center"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let update_grid_label_pipeline =
@@ -140,6 +143,7 @@ impl FromWorld for FluidPipelines {
                 shader: UPDATE_GRID_LABEL_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("update_grid_label"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let advection_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
@@ -153,6 +157,7 @@ impl FromWorld for FluidPipelines {
             shader: ADVECTION_SHADER_HANDLE,
             shader_defs: vec![],
             entry_point: Cow::from("advection"),
+            zero_initialize_workgroup_memory: false,
         });
 
         let add_force_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
@@ -167,6 +172,7 @@ impl FromWorld for FluidPipelines {
             shader: ADD_FORCE_SHADER_HANDLE,
             shader_defs: vec![],
             entry_point: Cow::from("add_force"),
+            zero_initialize_workgroup_memory: false,
         });
 
         let divergence_pipeline =
@@ -181,6 +187,7 @@ impl FromWorld for FluidPipelines {
                 shader: DIVERGENCE_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("divergence"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let jacobi_iteration_pipeline =
@@ -196,6 +203,7 @@ impl FromWorld for FluidPipelines {
                 shader: JACOBI_ITERATION_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("jacobi_iteration"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let jacobi_iteration_reverse_pipeline =
@@ -211,6 +219,7 @@ impl FromWorld for FluidPipelines {
                 shader: JACOBI_ITERATION_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("jacobi_iteration_reverse"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let solve_velocity_pipeline =
@@ -226,6 +235,7 @@ impl FromWorld for FluidPipelines {
                 shader: SOLVE_VELOCITY_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("solve_velocity"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let recompute_levelset_initialization_pipeline =
@@ -239,6 +249,7 @@ impl FromWorld for FluidPipelines {
                 shader: RECOMPUTE_LEVELSET_INITIALIZE_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("initialize"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let recompute_levelset_iteration_pipeline =
@@ -252,6 +263,7 @@ impl FromWorld for FluidPipelines {
                 shader: RECOMPUTE_LEVELSET_ITERATE_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("iterate"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let recompute_levelset_solve_pipeline =
@@ -265,6 +277,7 @@ impl FromWorld for FluidPipelines {
                 shader: RECOMPUTE_LEVELSET_SDF_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("calculate_sdf"),
+                zero_initialize_workgroup_memory: false,
             });
 
         let advect_levelset_pipeline =
@@ -279,6 +292,7 @@ impl FromWorld for FluidPipelines {
                 shader: ADVECT_LEVELSET_SHADER_HANDLE,
                 shader_defs: vec![],
                 entry_point: Cow::from("advect_levelset"),
+                zero_initialize_workgroup_memory: false,
             });
 
         Self {
@@ -378,9 +392,11 @@ pub(super) fn prepare_fluid_bind_groups(
         &JumpFloodingUniformBuffer,
     )>,
     render_device: Res<RenderDevice>,
-    fallback_image: Res<FallbackImage>,
     gpu_images: Res<RenderAssets<GpuImage>>,
+    fallback_image: Res<FallbackImage>,
+    buffers: Res<RenderAssets<GpuShaderStorageBuffer>>,
 ) {
+    let mut param = (gpu_images, fallback_image, buffers);
     for (
         entity,
         velocity_textures,
@@ -404,8 +420,7 @@ pub(super) fn prepare_fluid_bind_groups(
             .as_bind_group(
                 &pipelines.velocity_bind_group_layout,
                 &render_device,
-                &gpu_images,
-                &fallback_image,
+                &mut param,
             )
             .unwrap()
             .bind_group;
@@ -414,8 +429,7 @@ pub(super) fn prepare_fluid_bind_groups(
             .as_bind_group(
                 &pipelines.pressure_bind_group_layout,
                 &render_device,
-                &gpu_images,
-                &fallback_image,
+                &mut param,
             )
             .unwrap()
             .bind_group;
@@ -424,8 +438,7 @@ pub(super) fn prepare_fluid_bind_groups(
             .as_bind_group(
                 &pipelines.divergence_bind_group_layout,
                 &render_device,
-                &gpu_images,
-                &fallback_image,
+                &mut param,
             )
             .unwrap()
             .bind_group;
@@ -434,8 +447,7 @@ pub(super) fn prepare_fluid_bind_groups(
             .as_bind_group(
                 &pipelines.local_forces_bind_group_layout,
                 &render_device,
-                &gpu_images,
-                &fallback_image,
+                &mut param,
             )
             .unwrap()
             .bind_group;
@@ -454,8 +466,7 @@ pub(super) fn prepare_fluid_bind_groups(
             .as_bind_group(
                 &pipelines.levelset_bind_group_layout,
                 &render_device,
-                &gpu_images,
-                &fallback_image,
+                &mut param,
             )
             .unwrap()
             .bind_group;
@@ -464,8 +475,7 @@ pub(super) fn prepare_fluid_bind_groups(
             .as_bind_group(
                 &pipelines.jump_flooding_seeds_bind_group_layout,
                 &render_device,
-                &gpu_images,
-                &fallback_image,
+                &mut param,
             )
             .unwrap()
             .bind_group;
@@ -493,15 +503,16 @@ pub(super) fn prepare_fluid_bind_group_for_resources(
     pilelines: Res<FluidPipelines>,
     obstacles: Res<Obstacles>,
     render_device: Res<RenderDevice>,
-    fallback_image: Res<FallbackImage>,
     gpu_images: Res<RenderAssets<GpuImage>>,
+    fallback_image: Res<FallbackImage>,
+    buffers: Res<RenderAssets<GpuShaderStorageBuffer>>,
 ) {
+    let mut param = (gpu_images, fallback_image, buffers);
     let obstacles_bind_group = obstacles
         .as_bind_group(
             &pilelines.obstacles_bind_group_layout,
             &render_device,
-            &gpu_images,
-            &fallback_image,
+            &mut param,
         )
         .unwrap()
         .bind_group;

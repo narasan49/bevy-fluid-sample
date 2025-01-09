@@ -4,6 +4,7 @@ use bevy::{
         extract_component::ExtractComponent,
         extract_resource::ExtractResource,
         render_resource::{AsBindGroup, ShaderType, UniformBuffer},
+        storage::ShaderStorageBuffer,
     },
 };
 
@@ -21,7 +22,6 @@ use bevy::{
 /// ```rust
 /// use bevy::{
 ///     prelude::*,
-///     sprite::MaterialMesh2dBundle,
 /// };
 /// use bevy_eulerian_fluid::{
 ///     material::VelocityMaterial,
@@ -41,14 +41,14 @@ use bevy::{
 /// }
 ///
 /// // On Update
-/// fn on_advection_initialized(
+/// fn on_fluid_setup(
 ///     mut commands: Commands,
-///     query: Query<&VelocityTextures, Added<VelocityTextures>>,
+///     query: Query<(Entity, &VelocityTextures), Added<VelocityTextures>>,
 ///     mut meshes: ResMut<Assets<Mesh>>,
 ///     mut materials: ResMut<Assets<VelocityMaterial>>,
 /// ) {
 ///     // Spawn a mesh to visualize fluid simulation.
-///     for velocity_texture in &query {
+///     for (entity, velocity_texture) in &query {
 ///         let mesh = meshes.add(Rectangle::default());
 ///         let material = materials.add(VelocityMaterial {
 ///             offset: 0.5,
@@ -56,13 +56,11 @@ use bevy::{
 ///             u: velocity_texture.u0.clone(),
 ///             v: velocity_texture.v0.clone(),
 ///         });
-///         commands
-///             .spawn(MaterialMesh2dBundle {
-///                 mesh: mesh.into(),
-///                 transform: Transform::default().with_scale(Vec3::splat(512.0)),
-///                 material,
-///                 ..default()
-///             });
+///         commands.entity(entity).insert((
+///             Mesh2d(mesh),
+///             MeshMaterial2d(material),
+///             Transform::default().with_scale(Vec3::splat(512.0)),
+///         ));
 ///     }
 /// }
 /// ```
@@ -131,9 +129,9 @@ pub struct LevelsetTextures {
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]
 pub struct LocalForces {
     #[storage(0, read_only, visibility(compute))]
-    pub force: Vec<Vec2>,
+    pub forces: Handle<ShaderStorageBuffer>,
     #[storage(1, read_only, visibility(compute))]
-    pub position: Vec<Vec2>,
+    pub positions: Handle<ShaderStorageBuffer>,
 }
 
 #[derive(Clone, ShaderType)]
@@ -146,12 +144,14 @@ pub struct CircleObstacle {
 #[derive(Resource, Clone, ExtractResource, AsBindGroup)]
 pub struct Obstacles {
     #[storage(0, read_only, visibility(compute))]
-    pub circles: Vec<CircleObstacle>,
+    pub circles: Handle<ShaderStorageBuffer>,
 }
 
 impl FromWorld for Obstacles {
-    fn from_world(_world: &mut World) -> Self {
-        Self { circles: vec![] }
+    fn from_world(world: &mut World) -> Self {
+        let mut buffers = world.resource_mut::<Assets<ShaderStorageBuffer>>();
+        let circles = buffers.add(ShaderStorageBuffer::from(vec![Vec2::ZERO; 0]));
+        Self { circles }
     }
 }
 
