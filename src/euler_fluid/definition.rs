@@ -22,7 +22,6 @@ use bevy::{
 /// ```rust
 /// use bevy::{
 ///     prelude::*,
-///     sprite::MaterialMesh2dBundle,
 /// };
 /// use bevy_eulerian_fluid::{
 ///     material::VelocityMaterial,
@@ -42,14 +41,14 @@ use bevy::{
 /// }
 ///
 /// // On Update
-/// fn on_advection_initialized(
+/// fn on_fluid_setup(
 ///     mut commands: Commands,
-///     query: Query<&VelocityTextures, Added<VelocityTextures>>,
+///     query: Query<(Entity, &VelocityTextures), Added<VelocityTextures>>,
 ///     mut meshes: ResMut<Assets<Mesh>>,
 ///     mut materials: ResMut<Assets<VelocityMaterial>>,
 /// ) {
 ///     // Spawn a mesh to visualize fluid simulation.
-///     for velocity_texture in &query {
+///     for (entity, velocity_texture) in &query {
 ///         let mesh = meshes.add(Rectangle::default());
 ///         let material = materials.add(VelocityMaterial {
 ///             offset: 0.5,
@@ -57,13 +56,11 @@ use bevy::{
 ///             u: velocity_texture.u0.clone(),
 ///             v: velocity_texture.v0.clone(),
 ///         });
-///         commands
-///             .spawn(MaterialMesh2dBundle {
-///                 mesh: mesh.into(),
-///                 transform: Transform::default().with_scale(Vec3::splat(512.0)),
-///                 material,
-///                 ..default()
-///             });
+///         commands.entity(entity).insert((
+///             Mesh2d(mesh),
+///             MeshMaterial2d(material),
+///             Transform::default().with_scale(Vec3::splat(512.0)),
+///         ));
 ///     }
 /// }
 /// ```
