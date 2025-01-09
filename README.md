@@ -8,7 +8,9 @@ Try it on [here](https://narasan49.github.io/bevy_eulerian_fluid/)!
 
 ## Basic Usage
 1. Add `FluidPlugin` to the app.
-2. Spawn `FluidSettings`, then `FluidSimulationBundle` will be inserted automatically to the entity. By querying components bundled with `FluidSimulationBundle` such as `VelocityTextures`, the simulation results can be retreived. (See [examples](./examples/) for the detailed implementation!)
+2. Spawn `FluidSettings`, then `FluidSimulationBundle` will be inserted automatically to the entity. By querying components bundled with `FluidSimulationBundle` such as `VelocityTextures`, the simulation results can be retreived.  
+
+Here is a short example. See [examples](./examples/) for the detailed implementation!  
 
 ```rust
 use bevy_eulerian_fluid::{
@@ -33,7 +35,7 @@ fn setup_scene(mut commands: Commands) {
         dt: 0.5f32,
         rho: 997f32, // water
         gravity: Vec2::Y,
-        size: SIZE,
+        size: (512, 512),
         initial_fluid_level: 0.9,
     });
 }
