@@ -7,7 +7,6 @@ use bevy::{
         settings::{Backends, RenderCreation, WgpuSettings},
         RenderPlugin,
     },
-    sprite::MaterialMesh2dBundle,
 };
 use bevy_eulerian_fluid::{
     definition::{FluidSettings, VelocityTextures},
@@ -61,9 +60,7 @@ fn main() {
 
 fn setup_scene(mut commands: Commands) {
     info!("initialize scene.");
-    commands
-        .spawn(Camera2dBundle::default())
-        .insert(Name::new("Camera"));
+    commands.spawn(Camera2d);
 
     let size = 128u32;
     for i in 0..4 {
@@ -107,11 +104,6 @@ fn on_fluid_setup(
             v: velocity_texture.v0.clone(),
         });
 
-        commands.spawn(MaterialMesh2dBundle {
-            mesh: mesh.into(),
-            transform: *transform,
-            material,
-            ..default()
-        });
+        commands.spawn((Mesh2d(mesh), MeshMaterial2d(material), *transform));
     }
 }

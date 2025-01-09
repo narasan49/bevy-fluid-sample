@@ -22,9 +22,10 @@ const PRESSED_COLOR: Color = Color::LinearRgba(LinearRgba {
     alpha: 1.0,
 });
 
-fn basic_button() -> ButtonBundle {
-    ButtonBundle {
-        style: Style {
+fn basic_button() -> impl Bundle {
+    (
+        Button,
+        Node {
             width: Val::Px(100.0),
             height: Val::Px(30.0),
             border: UiRect::all(Val::Px(2.0)),
@@ -32,10 +33,9 @@ fn basic_button() -> ButtonBundle {
             align_items: AlignItems::Center,
             ..default()
         },
-        border_color: BorderColor(Color::BLACK),
-        background_color: BUTTON_COLOR.into(),
-        ..default()
-    }
+        BackgroundColor(BUTTON_COLOR),
+        BorderColor(Color::BLACK),
+    )
 }
 
 impl Plugin for GameUiPlugin {
@@ -47,39 +47,36 @@ impl Plugin for GameUiPlugin {
 
 fn setup(mut commands: Commands) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                justify_content: JustifyContent::FlexStart,
-                ..default()
-            },
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            justify_content: JustifyContent::FlexStart,
             ..default()
         })
         .with_children(|parent| {
             parent
                 .spawn(basic_button())
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Reset",
-                        TextStyle {
+                    parent.spawn((
+                        Text::new("Reset"),
+                        TextFont {
                             font_size: 30.0,
-                            color: Color::BLACK,
                             ..default()
                         },
+                        TextColor::BLACK,
                     ));
                 })
                 .insert(ResetButton);
             parent
                 .spawn(basic_button())
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Add",
-                        TextStyle {
+                    parent.spawn((
+                        Text::new("Add"),
+                        TextFont {
                             font_size: 30.0,
-                            color: Color::BLACK,
                             ..default()
                         },
+                        TextColor::BLACK,
                     ));
                 })
                 .insert(AddButton);
