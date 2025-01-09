@@ -4,6 +4,7 @@ use bevy::{
         extract_component::ExtractComponent,
         extract_resource::ExtractResource,
         render_resource::{AsBindGroup, ShaderType, UniformBuffer},
+        storage::ShaderStorageBuffer,
     },
 };
 
@@ -131,9 +132,9 @@ pub struct LevelsetTextures {
 #[derive(Component, Clone, ExtractComponent, AsBindGroup)]
 pub struct LocalForces {
     #[storage(0, read_only, visibility(compute))]
-    pub force: Vec<Vec2>,
+    pub forces: Handle<ShaderStorageBuffer>,
     #[storage(1, read_only, visibility(compute))]
-    pub position: Vec<Vec2>,
+    pub positions: Handle<ShaderStorageBuffer>,
 }
 
 #[derive(Clone, ShaderType)]
@@ -146,12 +147,14 @@ pub struct CircleObstacle {
 #[derive(Resource, Clone, ExtractResource, AsBindGroup)]
 pub struct Obstacles {
     #[storage(0, read_only, visibility(compute))]
-    pub circles: Vec<CircleObstacle>,
+    pub circles: Handle<ShaderStorageBuffer>,
 }
 
 impl FromWorld for Obstacles {
-    fn from_world(_world: &mut World) -> Self {
-        Self { circles: vec![] }
+    fn from_world(world: &mut World) -> Self {
+        let mut buffers = world.resource_mut::<Assets<ShaderStorageBuffer>>();
+        let circles = buffers.add(ShaderStorageBuffer::from(vec![Vec2::ZERO; 0]));
+        Self { circles }
     }
 }
 

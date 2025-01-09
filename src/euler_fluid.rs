@@ -7,6 +7,7 @@ pub mod setup_components;
 use crate::euler_fluid::definition::{FluidSettings, LevelsetTextures};
 use crate::euler_fluid::fluid_bind_group::FluidBindGroups;
 use crate::material::FluidMaterialPlugin;
+use bevy::render::storage::ShaderStorageBuffer;
 use bevy::{
     asset::load_internal_asset,
     math::vec2,
@@ -187,7 +188,8 @@ impl Plugin for FluidPlugin {
 
 fn update_geometry(
     query: Query<(&geometry::Circle, &Transform, &Velocity)>,
-    mut obstacles: ResMut<Obstacles>,
+    obstacles: Res<Obstacles>,
+    mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
 ) {
     let circles = query
         .iter()
@@ -200,5 +202,6 @@ fn update_geometry(
         })
         .collect::<Vec<_>>();
 
-    obstacles.circles = circles;
+    let circles_buffer = buffers.get_mut(&obstacles.circles).unwrap();
+    circles_buffer.set_data(circles);
 }

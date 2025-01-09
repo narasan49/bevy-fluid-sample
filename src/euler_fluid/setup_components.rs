@@ -1,4 +1,7 @@
-use bevy::{prelude::*, render::render_resource::TextureFormat};
+use bevy::{
+    prelude::*,
+    render::{render_resource::TextureFormat, storage::ShaderStorageBuffer},
+};
 
 use crate::{
     euler_fluid::definition::{
@@ -15,6 +18,7 @@ pub(crate) fn watch_fluid_component(
     mut commands: Commands,
     query: Query<(Entity, &FluidSettings), Added<FluidSettings>>,
     mut images: ResMut<Assets<Image>>,
+    mut buffers: ResMut<Assets<ShaderStorageBuffer>>,
 ) {
     for (entity, settings) in &query {
         let size = settings.size;
@@ -45,6 +49,9 @@ pub(crate) fn watch_fluid_component(
         let jump_flooding_seeds_x = images.new_texture_storage(size, TextureFormat::R32Float);
         let jump_flooding_seeds_y = images.new_texture_storage(size, TextureFormat::R32Float);
 
+        let force = buffers.add(ShaderStorageBuffer::from(vec![Vec2::ZERO; 0]));
+        let position = buffers.add(ShaderStorageBuffer::from(vec![Vec2::ZERO; 0]));
+
         let velocity_textures = VelocityTextures { u0, v0, u1, v1 };
 
         let pressure_textures = PressureTextures { p0, p1 };
@@ -65,8 +72,8 @@ pub(crate) fn watch_fluid_component(
         };
 
         let local_forces = LocalForces {
-            force: vec![],
-            position: vec![],
+            forces: force,
+            positions: position,
         };
 
         let jump_flooding_seeds_textures = JumpFloodingSeedsTextures {

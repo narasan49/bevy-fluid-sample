@@ -8,7 +8,7 @@ use bevy::{
         settings::{Backends, WgpuSettings},
         RenderPlugin,
     },
-    sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle},
+    sprite::{Material2d, Material2dPlugin},
 };
 
 use bevy_eulerian_fluid::{
@@ -59,16 +59,14 @@ fn main() {
     .add_plugins(FpsCounterPlugin)
     .add_plugins(Material2dPlugin::<CustomMaterial>::default())
     .add_systems(Startup, setup_scene)
-    .add_systems(Update, on_advection_initialized)
+    .add_systems(Update, on_fluid_setup)
     .add_systems(Update, mouse_motion);
 
     app.run();
 }
 
 fn setup_scene(mut commands: Commands) {
-    commands
-        .spawn(Camera2dBundle::default())
-        .insert(Name::new("Camera"));
+    commands.spawn(Camera2d);
 
     commands.spawn(FluidSettings {
         dx: 1.0f32,
@@ -80,7 +78,7 @@ fn setup_scene(mut commands: Commands) {
     });
 }
 
-fn on_advection_initialized(
+fn on_fluid_setup(
     mut commands: Commands,
     query: Query<(Entity, &LevelsetTextures, &VelocityTextures), Added<LevelsetTextures>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -96,14 +94,13 @@ fn on_advection_initialized(
             scale: -100.0,
         });
 
-        commands.entity(entity).insert(MaterialMesh2dBundle {
-            mesh: mesh.clone().into(),
-            transform: Transform::default()
+        commands.entity(entity).insert((
+            Mesh2d(mesh.clone()),
+            MeshMaterial2d(material),
+            Transform::default()
                 .with_translation(Vec3::new(SIZE.0 as f32 * -0.5, 0.0, 0.0))
                 .with_scale(Vec3::new(SIZE.0 as f32, SIZE.1 as f32, 0.0)),
-            material,
-            ..default()
-        });
+        ));
 
         let material_velocity = velocity_materials.add(VelocityMaterial {
             offset: 0.5,
@@ -112,23 +109,22 @@ fn on_advection_initialized(
             v: velocity_textures.v0.clone(),
         });
 
-        commands.spawn(MaterialMesh2dBundle {
-            mesh: mesh.into(),
-            transform: Transform::default()
+        commands.spawn((
+            Mesh2d(mesh),
+            MeshMaterial2d(material_velocity),
+            Transform::default()
                 .with_translation(Vec3::new(SIZE.0 as f32 * 0.5, 0.0, 0.0))
                 .with_scale(Vec3::new(SIZE.0 as f32, SIZE.1 as f32, 0.0)),
-            material: material_velocity,
-            ..Default::default()
-        });
+        ));
 
         // Draw labels for each panel
-        commands.spawn(TextBundle::from_section(
-            "Left: Surface, Right: Velocity",
-            TextStyle {
+        commands.spawn((
+            Text::new("Left: Surface, Right: Velocity"),
+            TextFont {
                 font_size: 20.0,
-                color: Color::WHITE,
                 ..default()
             },
+            TextColor::WHITE,
         ));
     }
 }
