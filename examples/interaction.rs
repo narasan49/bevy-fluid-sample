@@ -64,14 +64,17 @@ fn main() {
 fn setup_scene(mut commands: Commands) {
     commands.spawn(Camera2d);
 
-    commands.spawn(FluidSettings {
-        dx: 1.0f32,
-        dt: 0.5f32,
-        rho: 1.293f32, // air
-        gravity: Vec2::ZERO,
-        size: (256, 256),
-        initial_fluid_level: 1.0f32,
-    });
+    commands.spawn((
+        FluidSettings {
+            dx: 1.0f32,
+            dt: 0.5f32,
+            rho: 1.293f32, // air
+            gravity: Vec2::ZERO,
+            size: (256, 256),
+            initial_fluid_level: 1.0f32,
+        },
+        Transform::default().with_scale(Vec3::splat(256.0)),
+    ));
 }
 
 fn on_fluid_setup(
@@ -92,7 +95,6 @@ fn on_fluid_setup(
         commands.entity(entity).insert((
             Mesh2d(mesh),
             MeshMaterial2d(material),
-            Transform::default().with_scale(Vec3::splat(256.0)),
         ));
     }
 }
