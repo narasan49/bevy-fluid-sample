@@ -67,6 +67,8 @@ See also an [interaction example](./examples/interaction.rs) for the detailed im
 - [ ] Solid body interaction
   - [x] One-way solid body to fluid interaction
   - [ ] Two-way coupling with solid body and fluid
+  - [ ] Various shapes support
+    - [x] Circle
 
 ## Examples
 There are some examples to demonstrate how to visualize and interact to the simulation results:  
