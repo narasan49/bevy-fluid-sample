@@ -76,6 +76,7 @@ impl render_graph::Node for EulerFluidNode {
                     CachedPipelineState::Ok(_recompute_levelset_initialization_pipeline),
                     CachedPipelineState::Ok(_recompute_levelset_iteration_pipeline),
                     CachedPipelineState::Ok(_recompute_levelset_solve_pipeline),
+                    CachedPipelineState::Ok(_advect_levelset_pipeline),
                 ) = (
                     pipeline_cache.get_compute_pipeline_state(pipelines.update_grid_label_pipeline),
                     pipeline_cache.get_compute_pipeline_state(pipelines.advection_pipeline),
@@ -93,6 +94,7 @@ impl render_graph::Node for EulerFluidNode {
                     ),
                     pipeline_cache
                         .get_compute_pipeline_state(pipelines.recompute_levelset_solve_pipeline),
+                    pipeline_cache.get_compute_pipeline_state(pipelines.advect_levelset_pipeline),
                 ) {
                     self.state = State::Update;
                 }
