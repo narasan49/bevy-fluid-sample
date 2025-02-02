@@ -98,8 +98,8 @@ fn on_fluid_setup(
         // spwan plane to visualize advection
         let mesh = meshes.add(Rectangle::default());
         let material = materials.add(VelocityMaterial {
-            offset: 0.5,
-            scale: 0.1,
+            u_range: Vec2::new(-10.0, 10.0),
+            v_range: Vec2::new(-10.0, 10.0),
             u: velocity_texture.u0.clone(),
             v: velocity_texture.v0.clone(),
         });
