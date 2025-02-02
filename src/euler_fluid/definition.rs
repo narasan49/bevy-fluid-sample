@@ -81,6 +81,7 @@ pub struct SimulationUniform {
     pub rho: f32,
     pub gravity: Vec2,
     pub initial_fluid_level: f32,
+    pub fluid_transform: Mat4,
 }
 
 /// Fluid velocity field.
@@ -137,7 +138,7 @@ pub struct LocalForces {
 #[derive(Clone, ShaderType)]
 pub struct CircleObstacle {
     pub radius: f32,
-    pub center: Vec2,
+    pub transform: Mat4,
     pub velocity: Vec2,
 }
 
