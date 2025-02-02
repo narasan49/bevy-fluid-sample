@@ -106,8 +106,8 @@ fn on_fluid_setup(
         let mesh =
             meshes.add(Mesh::from(Plane3d::default()).translated_by(Vec3::new(0.0, 1.0, 1.0)));
         let material = materials.add(VelocityMaterial {
-            offset: 0.5,
-            scale: 0.1,
+            u_range: Vec2::new(-0.01, 0.01),
+            v_range: Vec2::new(-0.01, 0.01),
             u: velocity_texture.u0.clone(),
             v: velocity_texture.v0.clone(),
         });
