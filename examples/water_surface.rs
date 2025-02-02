@@ -103,8 +103,8 @@ fn on_fluid_setup(
         ));
 
         let material_velocity = velocity_materials.add(VelocityMaterial {
-            offset: 0.5,
-            scale: 0.1,
+            u_range: Vec2::new(-10.0, 10.0),
+            v_range: Vec2::new(-10.0, 10.0),
             u: velocity_textures.u0.clone(),
             v: velocity_textures.v0.clone(),
         });

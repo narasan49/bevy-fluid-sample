@@ -37,9 +37,9 @@ impl Plugin for FluidMaterialPlugin {
 #[derive(Asset, Clone, AsBindGroup, TypePath, Debug)]
 pub struct VelocityMaterial {
     #[uniform(0)]
-    pub offset: f32,
+    pub u_range: Vec2,
     #[uniform(1)]
-    pub scale: f32,
+    pub v_range: Vec2,
     #[texture(2)]
     #[sampler(3)]
     pub u: Handle<Image>,
