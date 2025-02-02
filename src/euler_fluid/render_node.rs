@@ -94,8 +94,7 @@ impl render_graph::Node for EulerFluidNode {
                     ),
                     pipeline_cache
                         .get_compute_pipeline_state(pipelines.recompute_levelset_solve_pipeline),
-                    pipeline_cache
-                        .get_compute_pipeline_state(pipelines.advect_levelset_pipeline),
+                    pipeline_cache.get_compute_pipeline_state(pipelines.advect_levelset_pipeline),
                 ) {
                     self.state = State::Update;
                 }
